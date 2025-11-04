@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\Sdm\PersonSdmController;
 use App\Http\Controllers\Admin\Sdm\SdmKeluargaController;
 use App\Http\Controllers\Admin\Sdm\SdmRekeningController;
 use App\Http\Controllers\Admin\Sdm\SdmRiwayatPendidikanController;
+use App\Http\Controllers\Admin\Sdm\SdmStrukturalController;
 use App\Http\Controllers\Content\PortalController;
 use Illuminate\Support\Facades\Route;
 
@@ -111,6 +112,21 @@ Route::prefix('sdm')->group(function () {
             ->name('sdm.rekening.update');
         Route::post('destroy/{id}', [SdmRekeningController::class, 'destroy'])
             ->name('sdm.rekening.destroy');
+    });
+
+    Route::prefix('struktural')->group(function () {
+        Route::get('/{id}', [SdmStrukturalController::class, 'index'])
+            ->name('sdm.struktural.index');
+        Route::get('data/{id}', [SdmStrukturalController::class, 'list'])
+            ->name('sdm.struktural.list');
+        Route::get('show/{id}', [SdmStrukturalController::class, 'show'])
+            ->name('sdm.struktural.show');
+        Route::post('/store', [SdmStrukturalController::class, 'store'])
+            ->name('sdm.struktural.store');
+        Route::post('update/{id}', [SdmStrukturalController::class, 'update'])
+            ->name('sdm.struktural.update');
+        Route::post('destroy/{id}', [SdmStrukturalController::class, 'destroy'])
+            ->name('sdm.struktural.destroy');
     });
 });
 

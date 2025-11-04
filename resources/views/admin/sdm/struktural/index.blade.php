@@ -12,7 +12,7 @@
     <li class="breadcrumb-item">
         <span class="bullet bg-gray-200 w-5px h-2px"></span>
     </li>
-    <li class="breadcrumb-item text-dark">Data Keluarga</li>
+    <li class="breadcrumb-item text-dark">Struktural</li>
 @endsection
 
 @section('content')
@@ -106,7 +106,7 @@
                                href="{{ route('admin.sdm.riwayat-pendidikan.index', ['id' => $id]) }}">Pendidikan</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-active-primary ms-0 me-8 py-5 active text-nowrap"
+                            <a class="nav-link text-active-primary ms-0 me-8 py-5 text-nowrap"
                                href="{{ route('admin.sdm.keluarga.index', ['id' => $id]) }}">Keluarga</a>
                         </li>
                         <li class="nav-item">
@@ -118,7 +118,7 @@
                                href="{{ route('admin.sdm.rekening.index', ['id' => $id]) }}">Rekening</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-active-primary ms-0 me-8 py-5 text-nowrap"
+                            <a class="nav-link text-active-primary ms-0 me-8 py-5 active text-nowrap"
                                href="{{ route('admin.sdm.struktural.index', ['id' => $id]) }}">Struktural</a>
                         </li>
                     </ul>
@@ -127,8 +127,8 @@
                 <div class="card-toolbar mb-4">
                     <div class="d-flex justify-content-end" data-kt-user-table-toolbar="base">
                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#form_create" title="Tambah Anggota Keluarga">
-                            Tambah Anggota Keluarga
+                                data-bs-target="#form_create" title="Tambah Struktural">
+                            Tambah Struktural
                         </button>
                     </div>
                 </div>
@@ -140,13 +140,18 @@
                             <thead>
                             <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0 fs-sm-8 fs-lg-6">
                                 <th class="min-w-75px ps-5">Aksi</th>
-                                <th class="min-w-150px">Nama Anggota</th>
-                                <th class="min-w-120px">NIK Anggota</th>
-                                <th class="min-w-120px">Hubungan</th>
-                                <th class="min-w-100px">Status Tanggungan</th>
-                                <th class="min-w-120px">Pekerjaan</th>
-                                <th class="min-w-120px">Pendidikan Terakhir</th>
-                                <th class="min-w-120px">Penghasilan</th>
+                                <th class="min-w-150px">Unit</th>
+                                <th class="min-w-150px">Jabatan</th>
+                                <th class="min-w-120px">Nomor SK</th>
+                                <th class="min-w-120px">Tanggal SK</th>
+                                <th class="min-w-120px">Tanggal Masuk</th>
+                                <th class="min-w-120px">Eselon</th>
+                                <th class="min-w-100px">Masa Jabatan</th>
+                                <th class="min-w-120px">Tanggal Keluar</th>
+                                <th class="min-w-120px">SK Masuk</th>
+                                <th class="min-w-120px">SK Keluar</th>
+                                <th class="min-w-120px">Periode</th>
+                                <th class="min-w-120px">Status</th>
                             </tr>
                             </thead>
                             <tbody class="text-gray-800 fw-bolder fs-sm-8 fs-lg-6">
@@ -157,9 +162,9 @@
             </div>
         </div>
     </div>
-    @include('admin.sdm.keluarga.view.detail')
-    @include('admin.sdm.keluarga.view.create')
-    @include('admin.sdm.keluarga.view.edit')
+    @include('admin.sdm.struktural.view.detail')
+    @include('admin.sdm.struktural.view.create')
+    @include('admin.sdm.struktural.view.edit')
 @endsection
 
 @section('javascript')
@@ -196,9 +201,9 @@
             });
         }
     </script>
-    @include('admin.sdm.keluarga.script.list')
-    @include('admin.sdm.keluarga.script.create')
-    @include('admin.sdm.keluarga.script.edit')
-    @include('admin.sdm.keluarga.script.detail')
-    @include('admin.sdm.keluarga.script.delete')
+    @include('admin.sdm.struktural.script.list')
+    @include('admin.sdm.struktural.script.create')
+    @include('admin.sdm.struktural.script.edit')
+    @include('admin.sdm.struktural.script.detail')
+    @include('admin.sdm.struktural.script.delete')
 @endsection
