@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Person\PersonController;
+use App\Http\Controllers\Admin\Ref\RefHubunganKeluargaController;
 use App\Http\Controllers\Admin\Ref\RefJenjangPendidikanController;
 use App\Http\Controllers\Admin\Sdm\PersonSdmController;
 use App\Http\Controllers\Admin\Sdm\SdmRiwayatPendidikanController;
@@ -68,5 +69,18 @@ Route::prefix('ref')->group(function () {
             ->name('ref.jenjang-pendidikan.store');
         Route::post('update/{id}', [RefJenjangPendidikanController::class, 'update'])
             ->name('ref.jenjang-pendidikan.update');
+    });
+    
+    Route::prefix('hubungan-keluarga')->group(function () {
+        Route::get('/', [RefHubunganKeluargaController::class, 'index'])
+            ->name('ref.hubungan-keluarga.index');
+        Route::get('data', [RefHubunganKeluargaController::class, 'list'])
+            ->name('ref.hubungan-keluarga.list');
+        Route::get('show/{id}', [RefHubunganKeluargaController::class, 'show'])
+            ->name('ref.hubungan-keluarga.show');
+        Route::post('/store', [RefHubunganKeluargaController::class, 'store'])
+            ->name('ref.hubungan-keluarga.store');
+        Route::post('update/{id}', [RefHubunganKeluargaController::class, 'update'])
+            ->name('ref.hubungan-keluarga.update');
     });
 });

@@ -18,7 +18,8 @@
                 <span class="menu-title">SDM</span>
             </a>
             @php
-                $referensiActive = request()->routeIs('admin.ref.jenjang-pendidikan.*');
+                $referensiActive = request()->routeIs('admin.ref.jenjang-pendidikan.*') ||
+                                   request()->routeIs('admin.ref.hubungan-keluarga.*');
             @endphp
             <div data-kt-menu-trigger="click"
                  class="menu-item menu-accordion {{ $referensiActive ? 'here show' : '' }}">
@@ -31,7 +32,12 @@
                        href="{{ route('admin.ref.jenjang-pendidikan.index') }}">
                         <span class="menu-title px-4">Jenjang Pendidikan</span>
                     </a>
+                    <a class="menu-link {{ request()->routeIs('admin.ref.hubungan-keluarga.*') ? 'active' : '' }}"
+                       href="{{ route('admin.ref.hubungan-keluarga.index') }}">
+                        <span class="menu-title px-4">Hubungan Keluarga</span>
+                    </a>
                 </div>
+                
             </div>
         </div>
     </div>
