@@ -47,8 +47,11 @@ final readonly class PersonService
             ->select([
                 'person.*',
                 'ref_almt_desa.desa',
+                'ref_almt_kecamatan.id_kecamatan',
                 'ref_almt_kecamatan.kecamatan',
+                'ref_almt_kabupaten.id_kabupaten',
                 'ref_almt_kabupaten.kabupaten',
+                'ref_almt_provinsi.id_provinsi',
                 'ref_almt_provinsi.provinsi',
             ])
             ->where('person.id_person', $id)

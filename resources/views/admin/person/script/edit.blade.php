@@ -44,43 +44,17 @@
                         $('#edit_image_preview').css('background-position', 'center');
                     }
                     fetchDataDropdown('{{ route('api.almt.provinsi') }}', '#edit_id_provinsi', 'provinsi', 'provinsi', () => {
-                        const provinsiOptions = $('#edit_id_provinsi option');
-                        provinsiOptions.each(function () {
-                            if ($(this).text() === response.data.provinsi) {
-                                $('#edit_id_provinsi').val($(this).val()).trigger('change');
-
-                                setTimeout(() => {
-                                    const kabupatenOptions = $('#edit_id_kabupaten option');
-                                    kabupatenOptions.each(function () {
-                                        if ($(this).text() === response.data.kabupaten) {
-                                            $('#edit_id_kabupaten').val($(this).val()).trigger('change');
-
-                                            setTimeout(() => {
-                                                const kecamatanOptions = $('#edit_id_kecamatan option');
-                                                kecamatanOptions.each(function () {
-                                                    if ($(this).text() === response.data.kecamatan) {
-                                                        $('#edit_id_kecamatan').val($(this).val()).trigger('change');
-
-                                                        setTimeout(() => {
-                                                            const desaOptions = $('#edit_id_desa option');
-                                                            desaOptions.each(function () {
-                                                                if ($(this).text() === response.data.desa) {
-                                                                    $('#edit_id_desa').val($(this).val()).trigger('change');
-                                                                    return false;
-                                                                }
-                                                            });
-                                                        }, 1000);
-                                                        return false;
-                                                    }
-                                                });
-                                            }, 1000);
-                                            return false;
-                                        }
+                        $('#edit_id_provinsi').val(response.data.id_provinsi).trigger('change');
+                        fetchDataDropdown(`{{ route('api.almt.kabupaten', ':id') }}`.replace(':id', response.data.id_provinsi), '#edit_id_kabupaten', 'kabupaten', 'kabupaten', () => {
+                            $('#edit_id_kabupaten').val(response.data.id_kabupaten).trigger('change');
+                             fetchDataDropdown(`{{ route('api.almt.kecamatan', ':id') }}`.replace(':id', response.data.id_kabupaten),'#edit_id_kecamatan', 'kecamatan', 'kecamatan', () => {
+                                    $('#edit_id_kecamatan').val(response.data.id_kecamatan).trigger('change');
+                                    fetchDataDropdown(`{{ route('api.almt.desa', ':id') }}`.replace(':id', response.data.id_kecamatan),'#edit_id_desa', 'desa', 'desa', () => {
+                                            $('#edit_id_desa').val(response.data.id_desa).trigger('change');
                                     });
-                                }, 1000);
-                                return false;
-                            }
-                        });
+                                });
+                         }); 
+                        
                     });
                 } else {
                     Swal.fire('Warning', response.message, 'warning');
