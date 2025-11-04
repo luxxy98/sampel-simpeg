@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\Master\MasterJabatanController;
 use App\Http\Controllers\Admin\Master\MasterPeriodeController;
 use App\Http\Controllers\Admin\Master\MasterUnitController;
 use App\Http\Controllers\Admin\Person\PersonAsuransiController;
@@ -139,6 +140,20 @@ Route::prefix('master')->group(function () {
         Route::post('update/{id}', [MasterUnitController::class, 'update'])
             ->name('master.unit.update');
     });
+
+    Route::prefix('jabatan')->group(function () {
+        Route::get('/', [MasterJabatanController::class, 'index'])
+            ->name('master.jabatan.index');
+        Route::get('data', [MasterJabatanController::class, 'list'])
+            ->name('master.jabatan.list');
+        Route::get('show/{id}', [MasterJabatanController::class, 'show'])
+            ->name('master.jabatan.show');
+        Route::post('/store', [MasterJabatanController::class, 'store'])
+            ->name('master.jabatan.store');
+        Route::post('update/{id}', [MasterJabatanController::class, 'update'])
+            ->name('master.jabatan.update');
+    });
+
 });
 
 Route::prefix('ref')->group(function () {

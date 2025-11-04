@@ -29,4 +29,5 @@ Route::prefix('ref')->group(function () {
 Route::prefix('master')->group(function () {
     Route::get('periode', [MasterController::class, 'periode'])->name('api.master.periode');
     Route::get('unit', [MasterController::class, 'unit'])->name('api.master.unit');
+    Route::get('jabatan', [MasterController::class, 'jabatan'])->name('api.master.jabatan');
 });
