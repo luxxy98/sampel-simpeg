@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Ref\RefJenisAsuransiController;
 use App\Http\Controllers\Admin\Ref\RefJenjangPendidikanController;
 use App\Http\Controllers\Admin\Sdm\PersonSdmController;
 use App\Http\Controllers\Admin\Sdm\SdmKeluargaController;
+use App\Http\Controllers\Admin\Sdm\SdmRekeningController;
 use App\Http\Controllers\Admin\Sdm\SdmRiwayatPendidikanController;
 use App\Http\Controllers\Content\PortalController;
 use Illuminate\Support\Facades\Route;
@@ -91,6 +92,21 @@ Route::prefix('sdm')->group(function () {
             ->name('sdm.asuransi.destroy');
         Route::get('find/by/nik/{id}', [PersonAsuransiController::class, 'find_by_nik'])
             ->name('sdm.asuransi.find_by_nik');
+    });
+
+    Route::prefix('rekening')->group(function () {
+        Route::get('/{id}', [SdmRekeningController::class, 'index'])
+            ->name('sdm.rekening.index');
+        Route::get('data/{id}', [SdmRekeningController::class, 'list'])
+            ->name('sdm.rekening.list');
+        Route::get('show/{id}', [SdmRekeningController::class, 'show'])
+            ->name('sdm.rekening.show');
+        Route::post('/store', [SdmRekeningController::class, 'store'])
+            ->name('sdm.rekening.store');
+        Route::post('update/{id}', [SdmRekeningController::class, 'update'])
+            ->name('sdm.rekening.update');
+        Route::post('destroy/{id}', [SdmRekeningController::class, 'destroy'])
+            ->name('sdm.rekening.destroy');
     });
 });
 
