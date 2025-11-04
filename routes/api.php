@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AlmtController;
+use App\Http\Controllers\Api\MasterController;
 use App\Http\Controllers\Api\RefController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,4 +24,9 @@ Route::prefix('ref')->group(function () {
     Route::get('hubungan-keluarga', [RefController::class, 'hubunganKeluarga'])->name('api.ref.hubungan-keluarga');
     Route::get('jenis-asuransi', [RefController::class, 'jenisAsuransi'])->name('api.ref.jenis-asuransi');
     Route::get('eselon', [RefController::class, 'eselon'])->name('api.ref.eselon');
+});
+
+Route::prefix('master')->group(function () {
+    Route::get('periode', [MasterController::class, 'periode'])->name('api.master.periode');
+    Route::get('unit', [MasterController::class, 'unit'])->name('api.master.unit');
 });
