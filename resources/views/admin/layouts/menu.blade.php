@@ -20,7 +20,8 @@
             @php
                 $referensiActive = request()->routeIs('admin.ref.jenjang-pendidikan.*') ||
                                    request()->routeIs('admin.ref.hubungan-keluarga.*') ||
-                                   request()->routeIs('admin.ref.jenis-asuransi.*');
+                                   request()->routeIs('admin.ref.jenis-asuransi.*') ||
+                                   request()->routeIs('admin.ref.eselon.*');
             @endphp
             <div data-kt-menu-trigger="click"
                  class="menu-item menu-accordion {{ $referensiActive ? 'here show' : '' }}">
@@ -40,6 +41,10 @@
                     <a class="menu-link {{ request()->routeIs('admin.ref.jenis-asuransi.*') ? 'active' : '' }}"
                        href="{{ route('admin.ref.jenis-asuransi.index') }}">
                         <span class="menu-title px-4">Jenis Asuransi</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.ref.eselon.*') ? 'active' : '' }}"
+                       href="{{ route('admin.ref.eselon.index') }}">
+                        <span class="menu-title px-4">Eselon</span>
                     </a>
                 </div>
             </div>

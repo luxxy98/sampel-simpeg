@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Ref\RefEselonService;
 use App\Services\Ref\RefHubunganKeluargaService;
 use App\Services\Ref\RefJenisAsuransiService;
 use App\Services\Ref\RefJenjangPendidikanService;
@@ -16,6 +17,7 @@ final class RefController extends Controller
         private readonly RefJenjangPendidikanService $refJenjangPendidikanService,
         private readonly RefHubunganKeluargaService  $refHubunganKeluargaService,
         private readonly RefJenisAsuransiService     $refJenisAsuransiService,
+        private readonly RefEselonService            $refEselonService,
         private readonly TransactionService          $transactionService,
         private readonly ResponseService             $responseService,
     ) {}
@@ -46,6 +48,15 @@ final class RefController extends Controller
                 $item->setAttribute('jenis_asuransi', $item->nama_produk . ' (' . $item->jenis_asuransi . ')');
                 return $item;
             });
+
+            return $this->responseService->successResponse('Data berhasil diambil', $data);
+        });
+    }
+
+    public function eselon(): JsonResponse
+    {
+        return $this->transactionService->handleWithShow(function () {
+            $data = $this->refEselonService->getListDataOrdered('id_eselon');
 
             return $this->responseService->successResponse('Data berhasil diambil', $data);
         });
