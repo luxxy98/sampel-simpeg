@@ -19,7 +19,18 @@ final class FileUploadService
     public function __construct(private readonly string $disk = 'public')
     {
     }
-
+    /**
+     * Konfigurasi untuk berbagai tipe file
+     */
+    private function getConfigForType(string $type): array
+    {
+        return match ($type) {
+            'person_foto' => ['directory' => 'person'],
+            'pendidikan' => ['directory' => 'pendidikan'],
+            'struktural' => ['directory' => 'struktural'],
+            default => ['directory' => 'dokumen'],
+        };
+    }
     /**
      * Public method untuk validasi file sebelum upload
      * Dipanggil dari controller untuk memastikan file aman
@@ -54,7 +65,6 @@ final class FileUploadService
         // Enhanced security validation
         $this->validateFileContent($file);
         $this->validateMimeType($file, $extension);
-        $this->scanForMaliciousContent($file);
     }
 
     /**
@@ -170,94 +180,6 @@ final class FileUploadService
     }
 
     /**
-     * Scan konten file untuk mendeteksi potensi malicious content
-     */
-    private function scanForMaliciousContent(UploadedFile $file): void
-    {
-        $filePath = $file->getPathname();
-        $content = file_get_contents($filePath);
-
-        if ($content === false) {
-            throw new InvalidArgumentException('Tidak dapat membaca konten file');
-        }
-
-        // Deteksi script/executable content dalam file
-        $maliciousPatterns = [
-            // JavaScript patterns
-            '/<script[^>]*>/i',
-            '/javascript:/i',
-            '/eval\s*\(/i',
-            '/document\.write/i',
-            '/window\.location/i',
-
-            // PHP patterns
-            '/<\?php/i',
-            '/<\?=/i',
-            '/eval\s*\(/i',
-            '/system\s*\(/i',
-            '/exec\s*\(/i',
-            '/shell_exec\s*\(/i',
-            '/passthru\s*\(/i',
-            '/file_get_contents\s*\(/i',
-            '/file_put_contents\s*\(/i',
-
-            // Binary executable signatures
-            '/MZ[\x00-\xFF]{58}PE/s', // PE executable
-            '/\x7fELF/s', // ELF executable
-            '/\xca\xfe\xba\xbe/s', // Mach-O
-
-            // Suspicious PDF content
-            '/\/JavaScript\s*\(/i',
-            '/\/JS\s*\(/i',
-            '/\/Launch\s*\(/i',
-            '/\/EmbeddedFile\s*\(/i',
-
-            // Shell commands
-            '/\b(wget|curl|nc|netcat|bash|sh|cmd|powershell)\s+/i',
-
-            // Suspicious strings
-            '/\b(backdoor|malware|trojan|virus|exploit)\b/i',
-        ];
-
-        foreach ($maliciousPatterns as $pattern) {
-            if (preg_match($pattern, $content)) {
-                throw new InvalidArgumentException('File mengandung konten yang mencurigakan dan tidak dapat diterima untuk alasan keamanan');
-            }
-        }
-
-        // Validasi khusus untuk PDF
-        if (strtolower($file->getClientOriginalExtension()) === 'pdf') {
-            $this->validatePdfSecurity($content);
-        }
-    }
-
-    /**
-     * Validasi keamanan khusus untuk PDF
-     */
-    private function validatePdfSecurity(string $content): void
-    {
-        // Deteksi PDF dengan JavaScript
-        if (preg_match('/\/JavaScript\s*\(|\/JS\s*\(/i', $content)) {
-            throw new InvalidArgumentException('PDF mengandung JavaScript dan tidak diizinkan');
-        }
-
-        // Deteksi PDF dengan launch actions
-        if (preg_match('/\/Launch\s*\(|\/GoToR\s*\(/i', $content)) {
-            throw new InvalidArgumentException('PDF mengandung launch action yang tidak diizinkan');
-        }
-
-        // Deteksi embedded files dalam PDF
-        if (preg_match('/\/EmbeddedFile\s*\(|\/EmbeddedFiles\s*/i', $content)) {
-            throw new InvalidArgumentException('PDF mengandung embedded file dan tidak diizinkan');
-        }
-
-        // Deteksi form actions mencurigakan
-        if (preg_match('/\/SubmitForm\s*\(|\/ImportData\s*\(/i', $content)) {
-            throw new InvalidArgumentException('PDF mengandung form action yang mencurigakan');
-        }
-    }
-
-    /**
      * Hapus file berdasarkan type
      */
     public function deleteFileByType(string $fileName, string $type): bool
@@ -267,22 +189,6 @@ final class FileUploadService
         return $this->deleteFile($fileName, $config['directory']);
     }
 
-    /**
-     * Konfigurasi untuk berbagai tipe file
-     */
-    private function getConfigForType(string $type): array
-    {
-        return match ($type) {
-            'person_foto' => ['directory' => 'person'],
-            'pendidikan' => ['directory' => 'pendidikan'],
-            'golongan' => ['directory' => 'golongan'],
-            'struktural' => ['directory' => 'struktural'],
-            'homebase' => ['directory' => 'homebase'],
-            'jakad' => ['directory' => 'jakad'],
-            'sertifikasi' => ['directory' => 'sertifikasi'],
-            default => ['directory' => 'dokumen'],
-        };
-    }
 
     /**
      * Hapus file
