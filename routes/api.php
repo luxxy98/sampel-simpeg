@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AlmtController;
+use App\Http\Controllers\Api\RefController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('almt')->group(function () {
@@ -15,4 +16,7 @@ Route::prefix('almt')->group(function () {
     Route::get('desa/{id}', [AlmtController::class, 'desa'])
         ->name('api.almt.desa')
         ->whereNumber('id');
+});
+Route::prefix('ref')->group(function () {
+    Route::get('jenjang-pendidikan', [RefController::class, 'jenjangPendidikan'])->name('api.ref.jenjang-pendidikan');
 });
