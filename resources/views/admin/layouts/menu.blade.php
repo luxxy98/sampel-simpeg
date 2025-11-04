@@ -48,6 +48,22 @@
                     </a>
                 </div>
             </div>
+            @php
+                $masterActive = request()->routeIs('admin.master.periode.*');
+            @endphp
+            <div data-kt-menu-trigger="click"
+                 class="menu-item menu-accordion {{ $masterActive ? 'here show' : '' }}">
+                <span class="menu-link">
+                    <span class="menu-title">Master</span>
+                    <span class="menu-arrow"></span>
+                </span>
+                <div class="menu-sub menu-sub-accordion menu-active-bg">
+                    <a class="menu-link {{ request()->routeIs('admin.master.periode.*') ? 'active' : '' }}"
+                       href="{{ route('admin.master.periode.index') }}">
+                        <span class="menu-title px-4">Periode</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

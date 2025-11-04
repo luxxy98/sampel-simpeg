@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\Master\MasterPeriodeController;
 use App\Http\Controllers\Admin\Person\PersonAsuransiController;
 use App\Http\Controllers\Admin\Person\PersonController;
 use App\Http\Controllers\Admin\Ref\RefEselonController;
@@ -77,7 +78,7 @@ Route::prefix('sdm')->group(function () {
         Route::get('find/by/nik/{id}', [SdmKeluargaController::class, 'find_by_nik'])
             ->name('sdm.keluarga.find_by_nik');
     });
-    
+
     Route::prefix('asuransi')->group(function () {
         Route::get('/{id}', [PersonAsuransiController::class, 'index'])
             ->name('sdm.asuransi.index');
@@ -111,6 +112,21 @@ Route::prefix('sdm')->group(function () {
     });
 });
 
+Route::prefix('master')->group(function () {
+    Route::prefix('periode')->group(function () {
+        Route::get('/', [MasterPeriodeController::class, 'index'])
+            ->name('master.periode.index');
+        Route::get('data', [MasterPeriodeController::class, 'list'])
+            ->name('master.periode.list');
+        Route::get('show/{id}', [MasterPeriodeController::class, 'show'])
+            ->name('master.periode.show');
+        Route::post('/store', [MasterPeriodeController::class, 'store'])
+            ->name('master.periode.store');
+        Route::post('update/{id}', [MasterPeriodeController::class, 'update'])
+            ->name('master.periode.update');
+    });
+});
+
 Route::prefix('ref')->group(function () {
     Route::prefix('jenjang-pendidikan')->group(function () {
         Route::get('/', [RefJenjangPendidikanController::class, 'index'])
@@ -124,7 +140,7 @@ Route::prefix('ref')->group(function () {
         Route::post('update/{id}', [RefJenjangPendidikanController::class, 'update'])
             ->name('ref.jenjang-pendidikan.update');
     });
-    
+
     Route::prefix('hubungan-keluarga')->group(function () {
         Route::get('/', [RefHubunganKeluargaController::class, 'index'])
             ->name('ref.hubungan-keluarga.index');
