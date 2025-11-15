@@ -37,15 +37,18 @@ final class PortalController extends Controller
     {
         $username = $request->input('username');
         $password = $request->input('password');
+        $recaptchaResponse = $request->input('g-recaptcha-response');
 
         $validationRules = [
             'username' => 'required',
             'password' => 'required',
+            'g-recaptcha-response' => 'required',
         ];
 
         $customMessages = [
             'username.required' => 'Nama Pengguna harus diisi.',
             'password.required' => 'Kata Kunci harus diisi.',
+            'g-recaptcha-response.required' => 'Harap verifikasi bahwa Anda bukan robot.',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $customMessages);
@@ -58,6 +61,58 @@ final class PortalController extends Controller
             return redirect()->intended();
         } else {
             return redirect()->back()->with('error', 'nama pengguna dan kata kunci salah');
+        }
+        // Validasi reCAPTCHA
+        if (!$this->validateRecaptcha($recaptchaResponse)) {
+        return redirect()
+            ->back()
+            ->withErrors(['g-recaptcha-response' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.'])
+            ->withInput();
+        }
+
+        if (Auth::guard('admin')->attempt(['email' => $username, 'password' => $password])) {
+            return redirect()->intended();
+        } else {
+            return redirect()->back()->with('error', 'nama pengguna dan kata kunci salah')->withInput();
+        }
+    }
+
+    /**
+     * Validate reCAPTCHA token
+     */
+    private function validateRecaptcha(string $recaptchaResponse): bool
+    {
+        $secretKey = config('services.recaptcha.secret_key');
+
+        if (empty($secretKey)) {
+            Log::warning('reCAPTCHA secret key tidak ditemukan');
+            return false;
+        }
+
+        $url = 'https://www.google.com/recaptcha/api/siteverify';
+        $data = [
+            'secret' => $secretKey,
+            'response' => $recaptchaResponse,
+            'remoteip' => request()->ip()
+        ];
+
+        $options = [
+            'http' => [
+                'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method' => 'POST',
+                'content' => http_build_query($data)
+            ]
+        ];
+
+        try {
+            $context = stream_context_create($options);
+            $result = file_get_contents($url, false, $context);
+            $response = json_decode($result);
+
+            return $response->success ?? false;
+        } catch (\Exception $e) {
+            Log::error('reCAPTCHA validation error: ' . $e->getMessage());
+            return false;
         }
     }
 

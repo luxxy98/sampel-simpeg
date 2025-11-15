@@ -49,6 +49,15 @@
                                     </span>
                                 </div>
                             </div>
+
+                            <!-- reCAPTCHA v2 -->
+                                <div class="mb-4">
+                                    <div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}">
+                                    </div>
+                                    @error('g-recaptcha-response')
+                                        <div class="text-danger mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             <div class="d-grid my-4">
                                 <button type="submit" id="kt_sign_in_submit" class="btn btn-primary">
                                     <span class="indicator-label">Masuk</span>
@@ -67,6 +76,7 @@
 </div>
 <script src="{{ asset('assets/plugins/plugins.bundle.js') }}"></script>
 <script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </body>
 
 </html>
