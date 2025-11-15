@@ -5,6 +5,7 @@ namespace App\Services\Person;
 use App\Models\Person\Person;
 use App\Services\Tools\FileUploadService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final readonly class PersonService
 {
@@ -123,4 +124,16 @@ final readonly class PersonService
             ->where('person.uuid_person', $uuid)
             ->first();
     }
+    public function delete(Person $person): void
+    {
+        // hapus file foto kalau ada
+        if ($person->foto) {
+            $this->fileUploadService->deleteFileByType($person->foto, 'person_foto');
+        }
+
+        $person->delete();
+    }
+
+    // ... method lain (findByNik, getPersonDetailByUuid, dll)
+
 }

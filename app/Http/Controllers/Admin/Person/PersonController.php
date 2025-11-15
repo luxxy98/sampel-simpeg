@@ -27,25 +27,20 @@ final class PersonController extends Controller
         return view('admin.person.index');
     }
 
-    public function list(): JsonResponse
-    {
-        return $this->transactionService->handleWithDataTable(
-            fn() => $this->personService->getListData(),
-            [
-                'action' => fn($row) => implode(' ', [
-                    $this->transactionService->actionButton($row->id_person, 'detail'),
-                    $this->transactionService->actionButton($row->id_person, 'edit'),
-                ]),
-            ]
-        );
-    }
+   public function list(): JsonResponse
+{
+    return $this->transactionService->handleWithDataTable(
+        fn() => $this->personService->getListData(),
+        [
+            'action' => fn($row) => implode(' ', [
+                $this->transactionService->actionButton($row->id_person, 'detail'),
+                $this->transactionService->actionButton($row->id_person, 'edit'),
+                $this->transactionService->actionButton($row->id_person, 'delete'), // <- tambah ini
+            ]),
+        ]
+    );
+}
 
-    public function listApi(): JsonResponse
-    {
-        return $this->transactionService->handleWithDataTable(
-            fn() => $this->personService->getListData()
-        );
-    }
 
     public function store(PersonStoreRequest $request): JsonResponse
     {
@@ -119,6 +114,21 @@ final class PersonController extends Controller
             return $this->responseService->successResponse('Data berhasil diperbarui', $updatedData);
         });
     }
+
+    public function destroy(string $id): JsonResponse
+{
+    $data = $this->personService->findById($id);
+    if (!$data) {
+        return $this->responseService->errorResponse('Data tidak ditemukan');
+    }
+
+    return $this->transactionService->handleWithTransaction(function () use ($data) {
+        $this->personService->delete($data);
+
+        return $this->responseService->successResponse('Data berhasil dihapus');
+    });
+}
+
 
     public function show(string $id): JsonResponse
     {
