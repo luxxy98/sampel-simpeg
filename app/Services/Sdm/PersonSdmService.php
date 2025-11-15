@@ -7,6 +7,11 @@ use App\Models\Sdm\PersonSdm;
 use App\Services\Person\PersonService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use App\Models\Sdm\SdmKeluarga;
+use App\Models\Sdm\SdmRekening;
+use App\Models\Sdm\SdmRiwayatPendidikan;
+use App\Models\Sdm\SdmStruktural;
+
 
 final readonly class PersonSdmService
 {
@@ -75,6 +80,17 @@ final readonly class PersonSdmService
             ->first();
     }
 
+    public function delete(PersonSdm $sdm): void
+{
+    // Hapus dulu data turunan agar tidak kena error foreign key (#1451)
+    SdmKeluarga::where('id_sdm', $sdm->id_sdm)->delete();
+    SdmRekening::where('id_sdm', $sdm->id_sdm)->delete();
+    SdmRiwayatPendidikan::where('id_sdm', $sdm->id_sdm)->delete();
+    SdmStruktural::where('id_sdm', $sdm->id_sdm)->delete();
+
+    // Terakhir hapus row utama SDM
+    $sdm->delete();
+}
     public function findById(string $id): ?PersonSdm
     {
         return PersonSdm::find($id);

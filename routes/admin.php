@@ -51,6 +51,9 @@ Route::prefix('sdm')->group(function () {
         ->name('sdm.sdm.histori');
     Route::get('find/by/nik/{id}', [PersonSdmController::class, 'find_by_nik'])
         ->name('sdm.sdm.find_by_nik');
+        Route::post('destroy/{id}', [PersonSdmController::class, 'destroy'])
+        ->name('sdm.sdm.destroy');
+
 
     Route::prefix('riwayat-pendidikan')->group(function () {
         Route::get('/{id}', [SdmRiwayatPendidikanController::class, 'index'])
