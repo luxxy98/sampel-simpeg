@@ -1,47 +1,67 @@
-<div class="modal fade" id="form_detail_absensi" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
+<div class="modal fade" id="form_detail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded">
             <div class="modal-header">
-                <h5 class="modal-title">Detail Absensi</h5>
-                <a type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></a>
+                <h5 class="modal-title fw-bolder">Detail Absensi</h5>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal">
+                    <span class="svg-icon svg-icon-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                            <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                </button>
             </div>
-            <div class="modal-body fs-sm-8 fs-lg-6">
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div><strong>Tanggal:</strong> <span id="detail_tanggal"></span></div>
-                        <div><strong>SDM:</strong> <span id="detail_sdm"></span></div>
-                        <div><strong>Jadwal:</strong> <span id="detail_jadwal"></span></div>
+
+            <div class="modal-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="fw-bolder">Tanggal</div>
+                        <div id="d_tanggal" class="text-muted"></div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="fw-bolder">SDM</div>
+                        <div id="d_sdm" class="text-muted"></div>
                     </div>
                     <div class="col-md-4">
-                        <div><strong>Total Jam Kerja:</strong> <span id="detail_total_jam"></span></div>
-                        <div><strong>Terlambat:</strong> <span id="detail_total_terlambat"></span></div>
-                        <div><strong>Pulang Awal:</strong> <span id="detail_total_pulang_awal"></span></div>
+                        <div class="fw-bolder">Jadwal</div>
+                        <div id="d_jadwal" class="text-muted"></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="fw-bolder">Total Jam Kerja</div>
+                        <div id="d_total_jam_kerja" class="text-muted"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="fw-bolder">Total Terlambat</div>
+                        <div id="d_total_terlambat" class="text-muted"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="fw-bolder">Total Pulang Awal</div>
+                        <div id="d_total_pulang_awal" class="text-muted"></div>
                     </div>
                 </div>
 
                 <hr>
 
-                <h6 class="fw-bolder mb-3">Detail Log Absensi</h6>
-                <div class="table-responsive border border-dashed rounded p-3">
-                    <table class="table table-sm align-middle">
-                        <thead class="text-gray-600">
-                        <tr>
-                            <th>Jenis Absen</th>
-                            <th>Kategori</th>
+                <h6 class="fw-bolder mb-3">Detail (absensi_detail)</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-row-bordered" id="table_detail_view">
+                        <thead>
+                        <tr class="text-gray-600 fw-bold fs-7">
+                            <th>#</th>
+                            <th>Jenis</th>
                             <th>Mulai</th>
                             <th>Selesai</th>
-                            <th>Durasi (jam)</th>
+                            <th>Durasi</th>
                             <th>Lokasi Pulang</th>
                         </tr>
                         </thead>
-                        <tbody id="detail_tbody_absensi_detail">
-                        {{-- diisi via JS dari absensi_detail --}}
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-sm btn-dark fs-sm-8 fs-lg-6" data-bs-dismiss="modal">Close</button>
+
             </div>
         </div>
     </div>

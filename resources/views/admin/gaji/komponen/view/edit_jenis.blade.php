@@ -1,0 +1,34 @@
+<div class="modal fade" id="modal_edit_jenis" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bolder">Edit Jenis Komponen</h5>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal">×</button>
+            </div>
+
+            <div class="modal-body">
+                <form id="form_edit_jenis">
+                    <input type="hidden" id="edit_id_jenis_komponen" name="id_jenis_komponen">
+
+                    <div class="mb-3">
+                        <label class="fw-bolder mb-1">Nama Komponen</label>
+                        <input type="text" id="edit_nama_komponen" name="nama_komponen" class="form-control form-control-sm">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bolder mb-1">Jenis</label>
+                        <select id="edit_jenis" name="jenis" class="form-select form-select-sm" data-control="select2">
+                            <option value="PENGHASILAN">PENGHASILAN</option>
+                            <option value="POTONGAN">POTONGAN</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

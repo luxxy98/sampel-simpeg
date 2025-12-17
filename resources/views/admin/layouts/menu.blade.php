@@ -17,6 +17,73 @@
                 href="{{ route('admin.sdm.sdm.index') }}">
                 <span class="menu-title">SDM</span>
             </a>
+
+@php use Illuminate\Support\Facades\Route; @endphp
+
+{{-- ABSENSI --}}
+@if(Route::has('admin.absensi.index'))
+    <a class="menu-link {{ request()->routeIs('admin.absensi.*') ? 'active' : '' }}"
+       href="{{ route('admin.absensi.index') }}">
+        <span class="menu-title">Absensi</span>
+    </a>
+@endif
+
+@if(Route::has('admin.absensi.jenis.index'))
+    <a class="menu-link {{ request()->routeIs('admin.absensi.jenis.*') ? 'active' : '' }}"
+       href="{{ route('admin.absensi.jenis.index') }}">
+        <span class="menu-title">Jenis Absen</span>
+    </a>
+@endif
+
+{{-- GAJI --}}
+@php
+    $hasGajiAny = Route::has('admin.gaji.periode.index')
+        || Route::has('admin.gaji.trx.index')
+        || Route::has('admin.gaji.komponen.index')
+        || Route::has('admin.gaji.distribusi.index');
+    $gajiActive = request()->routeIs('admin.gaji.*');
+@endphp
+
+@if($hasGajiAny)
+    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $gajiActive ? 'here show' : '' }}">
+        <span class="menu-link">
+            <span class="menu-title">Gaji</span>
+            <span class="menu-arrow"></span>
+        </span>
+
+        <div class="menu-sub menu-sub-accordion menu-active-bg">
+            @if(Route::has('admin.gaji.periode.index'))
+                <a class="menu-link {{ request()->routeIs('admin.gaji.periode.*') ? 'active' : '' }}"
+                   href="{{ route('admin.gaji.periode.index') }}">
+                    <span class="menu-title px-4">Periode Gaji</span>
+                </a>
+            @endif
+
+            @if(Route::has('admin.gaji.trx.index'))
+                <a class="menu-link {{ request()->routeIs('admin.gaji.trx.*') ? 'active' : '' }}"
+                   href="{{ route('admin.gaji.trx.index') }}">
+                    <span class="menu-title px-4">Transaksi Gaji</span>
+                </a>
+            @endif
+
+            @if(Route::has('admin.gaji.komponen.index'))
+                <a class="menu-link {{ request()->routeIs('admin.gaji.komponen.*') ? 'active' : '' }}"
+                   href="{{ route('admin.gaji.komponen.index') }}">
+                    <span class="menu-title px-4">Komponen Gaji</span>
+                </a>
+            @endif
+
+            @if(Route::has('admin.gaji.distribusi.index'))
+                <a class="menu-link {{ request()->routeIs('admin.gaji.distribusi.*') ? 'active' : '' }}"
+                   href="{{ route('admin.gaji.distribusi.index') }}">
+                    <span class="menu-title px-4">Distribusi Transfer</span>
+                </a>
+            @endif
+        </div>
+    </div>
+@endif
+
+
             @php
                 $referensiActive = request()->routeIs('admin.ref.jenjang-pendidikan.*') ||
                                    request()->routeIs('admin.ref.hubungan-keluarga.*') ||

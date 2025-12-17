@@ -1,64 +1,62 @@
 <script defer>
-    function load_absensi() {
+    let tableAbsensi;
+
+    function initFilterAbsensi() {
+        $('#filter_tanggal_mulai').flatpickr({ dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
+        $('#filter_tanggal_selesai').flatpickr({ dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
+
+        $('#btn_filter_reload').on('click', function () {
+            if (tableAbsensi) tableAbsensi.ajax.reload();
+        });
+    }
+
+    function load_data_absensi() {
         $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#table-absensi').DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            destroy: true,
-            ajax: {
-                url: "{{ route('admin.absensi.datatable') }}", // sesuaikan route
-                type: "GET"
-            },
-            dom: "lBfrtip",
+
+        tableAbsensi = $('#example').DataTable({
+            dom: 'lBfrtip',
             stateSave: true,
             stateDuration: -1,
             pageLength: 10,
-            lengthMenu: [
-                [10, 15, 20, 25],
-                [10, 15, 20, 25]
-            ],
+            lengthMenu: [[10, 15, 20, 25], [10, 15, 20, 25]],
             buttons: [
-                {
-                    extend: 'colvis',
-                    collectionLayout: 'fixed columns',
-                    text: 'Kolom'
-                },
-                {
-                    extend: 'excelHtml5',
-                    title: 'Data Absensi'
-                },
-                {
-                    extend: 'print',
-                    title: 'Data Absensi'
-                }
+                { extend: 'colvis', className: 'btn btn-sm btn-dark rounded-2', columns: ':not(.noVis)' },
+                { extend: 'csv', action: newexportaction, className: 'btn btn-sm btn-dark rounded-2' },
+                { extend: 'excel', action: newexportaction, className: 'btn btn-sm btn-dark rounded-2' }
             ],
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{{ route('admin.absensi.list') }}',
+                cache: false,
+                data: function (d) {
+                    d.tanggal_mulai = $('#filter_tanggal_mulai').val();
+                    d.tanggal_selesai = $('#filter_tanggal_selesai').val();
+                    d.id_sdm = $('#filter_id_sdm').val();
+                }
+            },
+            order: [],
             columns: [
-                { data: 'aksi', name: 'aksi', orderable: false, searchable: false },
-                { data: 'tanggal', name: 'tanggal' },
-                { data: 'nama_sdm', name: 'nama_sdm' },
+                { data: 'action', name: 'action', orderable: false, searchable: false },
+                { data: 'tanggal', name: 'tanggal', render: (d) => d ? formatter.formatDate(d) : '' },
+                { data: 'sdm', name: 'sdm' },
                 { data: 'jadwal', name: 'jadwal' },
                 { data: 'total_jam_kerja', name: 'total_jam_kerja' },
                 { data: 'total_terlambat', name: 'total_terlambat' },
                 { data: 'total_pulang_awal', name: 'total_pulang_awal' },
-            ]
+            ],
         });
 
-        // search debounce
-        function performOptimizedSearch(query) {
-            try {
-                if (query.length >= 3 || query.length === 0) {
-                    table.search(query).draw();
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
+        const performOptimizedSearch = _.debounce(function (query) {
+            if (query.length >= 3 || query.length === 0) tableAbsensi.search(query).draw();
+        }, 1000);
 
-        $('#table-absensi_filter input').unbind().on('input', function () {
+        $('#example_filter input').unbind().on('input', function () {
             performOptimizedSearch($(this).val());
         });
     }
 
-    load_absensi();
+    initFilterAbsensi();
+    load_data_absensi();
 </script>
