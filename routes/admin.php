@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\Sdm\SdmRiwayatPendidikanController;
 use App\Http\Controllers\Admin\Sdm\SdmStrukturalController;
 use App\Http\Controllers\Content\PortalController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\Absensi\AbsensiController;
+use App\Http\Controllers\Admin\Gaji\PeriodeGajiController;
 
 Route::get('view-file/{folder}/{filename}', [PortalController::class, 'viewFile'])
     ->where(['folder' => '[A-Za-z0-9_\-]+', 'filename' => '[A-Za-z0-9_\-\.]+'])
@@ -51,7 +53,7 @@ Route::prefix('sdm')->group(function () {
         ->name('sdm.sdm.histori');
     Route::get('find/by/nik/{id}', [PersonSdmController::class, 'find_by_nik'])
         ->name('sdm.sdm.find_by_nik');
-        Route::post('destroy/{id}', [PersonSdmController::class, 'destroy'])
+    Route::post('destroy/{id}', [PersonSdmController::class, 'destroy'])
         ->name('sdm.sdm.destroy');
 
 
@@ -174,7 +176,6 @@ Route::prefix('master')->group(function () {
         Route::post('update/{id}', [MasterJabatanController::class, 'update'])
             ->name('master.jabatan.update');
     });
-
 });
 
 Route::prefix('ref')->group(function () {
@@ -228,5 +229,30 @@ Route::prefix('ref')->group(function () {
             ->name('ref.eselon.store');
         Route::post('update/{id}', [RefEselonController::class, 'update'])
             ->name('ref.eselon.update');
+    });
+
+
+    Route::prefix('absensi')->group(function () {
+        Route::get('/', [AbsensiController::class, 'index'])->name('absensi.index');
+        Route::get('datatable', [AbsensiController::class, 'datatable'])->name('absensi.datatable');
+        Route::post('/', [AbsensiController::class, 'store'])->name('absensi.store');
+
+        Route::get('{id}', [AbsensiController::class, 'show'])->whereNumber('id')->name('absensi.show');
+        Route::put('{id}', [AbsensiController::class, 'update'])->whereNumber('id')->name('absensi.update');
+        Route::get('{id}/detail', [AbsensiController::class, 'detail'])->whereNumber('id')->name('absensi.detail');
+        Route::delete('{id}', [AbsensiController::class, 'destroy'])->whereNumber('id') ->name('absensi.destroy');
+        
+    });
+
+
+    Route::prefix('gaji')->group(function () {
+        Route::prefix('periode')->group(function () {
+            Route::get('/', [PeriodeGajiController::class, 'index'])->name('gaji.periode.index');
+            Route::get('datatable', [PeriodeGajiController::class, 'datatable'])->name('gaji.periode.datatable');
+            Route::post('/', [PeriodeGajiController::class, 'store'])->name('gaji.periode.store');
+
+            Route::get('{id}', [PeriodeGajiController::class, 'show'])->whereNumber('id')->name('gaji.periode.show');
+            Route::put('{id}', [PeriodeGajiController::class, 'update'])->whereNumber('id')->name('gaji.periode.update');
+        });
     });
 });

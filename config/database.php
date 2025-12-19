@@ -27,7 +27,7 @@ return [
     */
 
     'connections' => [
-      
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
@@ -78,6 +78,33 @@ return [
                 PDO::ATTR_PERSISTENT => false,
             ]) : [],
         ],
+        'absensigaji' => [
+            'driver' => 'mysql',
+            'url' => env('DB_ABSENSIGAJI_URL'),
+            'host' => env('DB_ABSENSIGAJI_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_ABSENSIGAJI_PORT', env('DB_PORT', '3306')),
+            'database' => env('DB_ABSENSIGAJI_DATABASE', 'simpeg_absensigaji'),
+            'username' => env('DB_ABSENSIGAJI_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_ABSENSIGAJI_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('DB_ABSENSIGAJI_SOCKET', env('DB_SOCKET', '')),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => 'InnoDB',
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => false,
+                PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::MYSQL_ATTR_COMPRESS => true,
+                PDO::ATTR_TIMEOUT => 5,
+                PDO::ATTR_PERSISTENT => false,
+            ]) : [],
+        ],
+
+
     ],
 
     /*

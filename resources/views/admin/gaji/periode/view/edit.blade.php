@@ -1,5 +1,5 @@
-<div class="modal fade" id="form_edit_periode" data-bs-backdrop="static" data-bs-keyboard="false"
-     tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="form_edit_periode" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <form method="post" id="bt_submit_edit_periode">
             @csrf
@@ -15,25 +15,29 @@
                         {{-- Sama seperti create, tapi semua punya id="edit_..." --}}
                         <div class="col-md-3 mb-3">
                             <label class="fs-sm-8 fs-lg-6 fw-bolder mb-1 required">Tahun</label>
-                            <input type="number" name="tahun" id="edit_tahun"
-                                   class="form-control form-control-sm" required>
+                            <input type="number" name="tahun" id="edit_tahun" class="form-control form-control-sm"
+                                required>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="fs-sm-8 fs-lg-6 fw-bolder mb-1 required">Bulan</label>
-                            <select name="bulan" id="edit_bulan"
-                                    class="form-select form-select-sm" required>
-                                {{-- opsi bulan sama dengan create --}}
+                            <select name="bulan" id="edit_bulan" class="form-select form-select-sm" required>
+                                <option value="">-- Bulan --</option>
+                                @for ($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}">{{ $i }} -
+                                        {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}</option>
+                                @endfor
                             </select>
+
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="fs-sm-8 fs-lg-6 fw-bolder mb-1 required">Tanggal Mulai</label>
                             <input type="date" name="tanggal_mulai" id="edit_tanggal_mulai"
-                                   class="form-control form-control-sm" required>
+                                class="form-control form-control-sm" required>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="fs-sm-8 fs-lg-6 fw-bolder mb-1 required">Tanggal Selesai</label>
                             <input type="date" name="tanggal_selesai" id="edit_tanggal_selesai"
-                                   class="form-control form-control-sm" required>
+                                class="form-control form-control-sm" required>
                         </div>
 
                         <div class="col-md-4 mb-3">
@@ -49,7 +53,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="fs-sm-8 fs-lg-6 fw-bolder mb-1">Status Peninjauan</label>
                             <select name="status_peninjauan" id="edit_status_peninjauan"
-                                    class="form-select form-select-sm">
+                                class="form-select form-select-sm">
                                 <option value="DRAFT">DRAFT</option>
                                 <option value="DISETUJUI">DISETUJUI</option>
                                 <option value="GAGAL">GAGAL</option>
@@ -58,7 +62,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="fs-sm-8 fs-lg-6 fw-bolder mb-1">Tanggal Penggajian</label>
                             <input type="date" name="tanggal_penggajian" id="edit_tanggal_penggajian"
-                                   class="form-control form-control-sm">
+                                class="form-control form-control-sm">
                         </div>
                     </div>
                 </div>

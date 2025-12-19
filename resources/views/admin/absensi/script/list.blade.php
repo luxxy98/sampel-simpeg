@@ -18,8 +18,7 @@
                 [10, 15, 20, 25],
                 [10, 15, 20, 25]
             ],
-            buttons: [
-                {
+            buttons: [{
                     extend: 'colvis',
                     collectionLayout: 'fixed columns',
                     text: 'Kolom'
@@ -33,16 +32,62 @@
                     title: 'Data Absensi'
                 }
             ],
-            columns: [
-                { data: 'aksi', name: 'aksi', orderable: false, searchable: false },
-                { data: 'tanggal', name: 'tanggal' },
-                { data: 'nama_sdm', name: 'nama_sdm' },
-                { data: 'jadwal', name: 'jadwal' },
-                { data: 'total_jam_kerja', name: 'total_jam_kerja' },
-                { data: 'total_terlambat', name: 'total_terlambat' },
-                { data: 'total_pulang_awal', name: 'total_pulang_awal' },
+            columns: [{
+                    data: 'aksi',
+                    name: 'aksi',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'tanggal',
+                    name: 'tanggal'
+                },
+                {
+                    data: 'nama_sdm',
+                    name: 'nama_sdm'
+                },
+                {
+                    data: 'jadwal',
+                    name: 'jadwal'
+                },
+                {
+                    data: 'total_jam_kerja',
+                    name: 'total_jam_kerja'
+                },
+                {
+                    data: 'total_terlambat',
+                    name: 'total_terlambat'
+                },
+                {
+                    data: 'total_pulang_awal',
+                    name: 'total_pulang_awal'
+                },
             ]
         });
+
+        function deleteAbsensi(id) {
+            if (!confirm('Yakin ingin menghapus data absensi ini?')) return;
+
+            $.ajax({
+                url: "{{ url('admin/absensi') }}/" + id,
+                method: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(res) {
+                    alert(res.message || 'Berhasil menghapus');
+                    $('#table-absensi').DataTable().ajax.reload(null, false);
+                },
+                error: function(xhr) {
+                    let msg = 'Gagal menghapus';
+                    if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                    alert(msg);
+                }
+            });
+        }
+
+
 
         // search debounce
         function performOptimizedSearch(query) {
@@ -55,7 +100,7 @@
             }
         }
 
-        $('#table-absensi_filter input').unbind().on('input', function () {
+        $('#table-absensi_filter input').unbind().on('input', function() {
             performOptimizedSearch($(this).val());
         });
     }
