@@ -50,12 +50,6 @@
     </div>
 </div>
 
-{{-- MASTER JENIS ABSEN (opsional taruh di Referensi juga boleh) --}}
-<a class="menu-link {{ request()->routeIs('admin.absensi.jenis.*') ? 'active' : '' }}"
-   href="{{ route('admin.absensi.jenis.index') }}">
-    <span class="menu-title">Jenis Absen</span>
-</a>
-
             @php
                 $referensiActive = request()->routeIs('admin.ref.jenjang-pendidikan.*') ||
                                    request()->routeIs('admin.ref.hubungan-keluarga.*') ||

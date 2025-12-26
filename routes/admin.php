@@ -16,6 +16,13 @@ use App\Http\Controllers\Admin\Sdm\SdmRiwayatPendidikanController;
 use App\Http\Controllers\Admin\Sdm\SdmStrukturalController;
 use App\Http\Controllers\Content\PortalController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\Absensi\AbsensiController;
+use App\Http\Controllers\Admin\Absensi\AbsenJenisController;
+use App\Http\Controllers\Admin\Gaji\GajiPeriodeController;
+use App\Http\Controllers\Admin\Gaji\GajiTrxController;
+use App\Http\Controllers\Admin\Gaji\GajiKomponenController;
+use App\Http\Controllers\Admin\Gaji\GajiJenisKomponenController;
+use App\Http\Controllers\Admin\Gaji\GajiDistribusiController;
 
 Route::get('view-file/{folder}/{filename}', [PortalController::class, 'viewFile'])
     ->where(['folder' => '[A-Za-z0-9_\-]+', 'filename' => '[A-Za-z0-9_\-\.]+'])
@@ -229,4 +236,66 @@ Route::prefix('ref')->group(function () {
         Route::post('update/{id}', [RefEselonController::class, 'update'])
             ->name('ref.eselon.update');
     });
+
+    Route::prefix('absensi')->group(function () {
+    Route::get('/', [AbsensiController::class, 'index'])->name('absensi.index');
+    Route::get('data', [AbsensiController::class, 'list'])->name('absensi.list');
+    Route::get('show/{id}', [AbsensiController::class, 'show'])->name('absensi.show');
+    Route::post('store', [AbsensiController::class, 'store'])->name('absensi.store');
+    Route::post('update/{id}', [AbsensiController::class, 'update'])->name('absensi.update');
+    Route::post('destroy/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+
+    Route::prefix('jenis')->group(function () {
+        Route::get('/', [AbsenJenisController::class, 'index'])->name('absensi.jenis.index');
+        Route::get('data', [AbsenJenisController::class, 'list'])->name('absensi.jenis.list');
+        Route::get('show/{id}', [AbsenJenisController::class, 'show'])->name('absensi.jenis.show');
+        Route::post('store', [AbsenJenisController::class, 'store'])->name('absensi.jenis.store');
+        Route::post('update/{id}', [AbsenJenisController::class, 'update'])->name('absensi.jenis.update');
+        Route::post('destroy/{id}', [AbsenJenisController::class, 'destroy'])->name('absensi.jenis.destroy');
+    });
+});
+
+    Route::prefix('gaji')->group(function () {
+
+    Route::prefix('periode')->group(function () {
+        Route::get('/', [GajiPeriodeController::class, 'index'])->name('gaji.periode.index');
+        Route::get('data', [GajiPeriodeController::class, 'list'])->name('gaji.periode.list');
+        Route::get('show/{id}', [GajiPeriodeController::class, 'show'])->name('gaji.periode.show');
+        Route::post('store', [GajiPeriodeController::class, 'store'])->name('gaji.periode.store');
+        Route::post('update/{id}', [GajiPeriodeController::class, 'update'])->name('gaji.periode.update');
+        Route::post('destroy/{id}', [GajiPeriodeController::class, 'destroy'])->name('gaji.periode.destroy');
+    });
+
+    Route::prefix('trx')->group(function () {
+        Route::get('/', [GajiTrxController::class, 'index'])->name('gaji.trx.index');
+        Route::get('data', [GajiTrxController::class, 'list'])->name('gaji.trx.list');
+        Route::get('show/{id}', [GajiTrxController::class, 'show'])->name('gaji.trx.show');
+    });
+
+    Route::prefix('komponen')->group(function () {
+        Route::get('/', [GajiKomponenController::class, 'index'])->name('gaji.komponen.index');
+        Route::get('data', [GajiKomponenController::class, 'list'])->name('gaji.komponen.list');
+        Route::get('show/{id}', [GajiKomponenController::class, 'show'])->name('gaji.komponen.show');
+        Route::post('store', [GajiKomponenController::class, 'store'])->name('gaji.komponen.store');
+        Route::post('update/{id}', [GajiKomponenController::class, 'update'])->name('gaji.komponen.update');
+        Route::post('destroy/{id}', [GajiKomponenController::class, 'destroy'])->name('gaji.komponen.destroy');
+    });
+
+    Route::prefix('jenis-komponen')->group(function () {
+        Route::get('data', [GajiJenisKomponenController::class, 'list'])->name('gaji.jenis-komponen.list');
+        Route::get('show/{id}', [GajiJenisKomponenController::class, 'show'])->name('gaji.jenis-komponen.show');
+        Route::post('store', [GajiJenisKomponenController::class, 'store'])->name('gaji.jenis-komponen.store');
+        Route::post('update/{id}', [GajiJenisKomponenController::class, 'update'])->name('gaji.jenis-komponen.update');
+        Route::post('destroy/{id}', [GajiJenisKomponenController::class, 'destroy'])->name('gaji.jenis-komponen.destroy');
+    });
+
+    Route::prefix('distribusi')->group(function () {
+        Route::get('/', [GajiDistribusiController::class, 'index'])->name('gaji.distribusi.index');
+        Route::get('data', [GajiDistribusiController::class, 'list'])->name('gaji.distribusi.list');
+        Route::get('show/{id}', [GajiDistribusiController::class, 'show'])->name('gaji.distribusi.show');
+        Route::post('store', [GajiDistribusiController::class, 'store'])->name('gaji.distribusi.store');
+        Route::post('update/{id}', [GajiDistribusiController::class, 'update'])->name('gaji.distribusi.update');
+        Route::post('destroy/{id}', [GajiDistribusiController::class, 'destroy'])->name('gaji.distribusi.destroy');
+    });
+});
 });
