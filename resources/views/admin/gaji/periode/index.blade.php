@@ -1,0 +1,76 @@
+@extends('admin.layouts.index')
+
+@section('css')
+    <link rel="stylesheet" href="{{ asset('assets/plugins/datatables/dataTables.bootstrap5.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/plugins/datatables/responsive.bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/plugins/datatables/buttons.dataTables.min.css') }}">
+@endsection
+
+@section('list')
+    <li class="breadcrumb-item text-muted">Gaji</li>
+    <li class="breadcrumb-item"><span class="bullet bg-gray-200 w-5px h-2px"></span></li>
+    <li class="breadcrumb-item text-dark">Periode Gaji</li>
+@endsection
+
+@section('content')
+    <div class="container-fluid">
+        <div class="card mb-xl-8 mb-5 border-2 shadow">
+            <div class="card-header">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bolder mb-1">Periode Gaji</span>
+                    <span class="text-muted fs-7">Tahun, bulan, dan status proses</span>
+                </h3>
+                <div class="card-toolbar">
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#form_create">
+                        Tambah Periode
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-5">
+                <div class="table-responsive mb-8 shadow p-4 mx-0 border-hover-dark border-primary border-1 border-dashed fs-sm-8 fs-lg-6 rounded-2">
+                    <table id="example" class="table table-sm align-middle table-row-bordered table-row-solid gs-0 gy-2">
+                        <thead>
+                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0 fs-sm-8 fs-lg-6">
+                            <th class="min-w-75px ps-5">Aksi</th>
+                            <th class="min-w-140px">Tahun</th>
+                            <th class="min-w-140px">Bulan</th>
+                            <th class="min-w-160px">Mulai</th>
+                            <th class="min-w-160px">Selesai</th>
+                            <th class="min-w-160px">Tgl Penggajian</th>
+                            <th class="min-w-150px">Status</th>
+                            <th class="min-w-170px">Status Peninjauan</th>
+                        </tr>
+                        </thead>
+                        <tbody class="text-gray-800 fw-bolder fs-sm-8 fs-lg-6"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('admin.gaji.periode.view.create')
+    @include('admin.gaji.periode.view.edit')
+    @include('admin.gaji.periode.view.detail')
+@endsection
+
+@section('javascript')
+    <script src="{{ asset('assets/plugins/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/lodash.min.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/dataTables.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/dataTables.buttons.min.js') }}"></script>
+
+    <script src="{{ asset('assets/plugins/datatables/vfs_fonts.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/buttons.html5.min.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/jszip.min.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/print.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatables/responsive.bootstrap.min.js') }}"></script>
+
+    @include('admin.gaji.periode.script.list')
+    @include('admin.gaji.periode.script.create')
+    @include('admin.gaji.periode.script.edit')
+    @include('admin.gaji.periode.script.detail')
+    @include('admin.gaji.periode.script.delete')
+    @include('admin.gaji.periode.script.generate')
+@endsection

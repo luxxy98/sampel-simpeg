@@ -34,6 +34,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append([
             ThreatDetectionMiddleware::class,
         ]);
+        
+        // Use custom Authenticate middleware for proper redirect
+        $middleware->alias([
+            'auth' => \App\Http\Middleware\Authenticate::class,
+        ]);
     })
     ->withExceptions(static function (Exceptions $exceptions): void {
         $exceptions->reportable(static function (Throwable $e) {
@@ -49,20 +54,33 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(static function (Throwable $e, Request $request) {
+            // Handle authentication exceptions first - always redirect to login
+            if ($e instanceof TokenMismatchException || $e instanceof AuthenticationException) {
+                session()->invalidate();
+                session()->regenerateToken();
+                
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'message' => $e instanceof TokenMismatchException ? 'Token mismatch.' : 'Unauthenticated.'
+                    ], $e instanceof TokenMismatchException ? 419 : 401);
+                }
+                
+                return redirect()->route('index')->with('error', 
+                    $e instanceof TokenMismatchException 
+                        ? 'Sesi Anda telah berakhir. Silakan login kembali.' 
+                        : 'Anda harus login untuk mengakses halaman ini.'
+                );
+            }
+
             $status = 500;
             $message = 'Terjadi kesalahan pada server.';
+            
             if ($e instanceof NotFoundHttpException || $e instanceof RouteNotFoundException || $e instanceof ModelNotFoundException) {
                 $status = 404;
                 $message = 'Halaman tidak ditemukan.';
             } elseif ($e instanceof MethodNotAllowedHttpException) {
                 $status = 405;
                 $message = 'Metode tidak diperbolehkan.';
-            } elseif ($e instanceof TokenMismatchException || $e instanceof AuthenticationException) {
-                session()->invalidate();
-                session()->regenerateToken();
-                $redirect = redirect()->route('index')->with('error', $e instanceof TokenMismatchException ? 'Sesi Anda telah berakhir. Silakan login kembali.' : 'Anda harus login untuk mengakses halaman ini.');
-
-                return $request->wantsJson() ? response()->json(['message' => $e instanceof TokenMismatchException ? 'Token mismatch.' : 'Unauthenticated.'], $e instanceof TokenMismatchException ? 419 : 401) : $redirect;
             } elseif ($e instanceof AccessDeniedHttpException || $e instanceof AuthorizationException || $e instanceof UnauthorizedException) {
                 $status = 403;
                 $message = 'Akses ditolak. Anda tidak memiliki izin untuk melakukan tindakan ini.';

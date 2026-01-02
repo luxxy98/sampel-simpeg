@@ -11,86 +11,116 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-
 final class AbsensiController extends Controller
 {
     public function __construct(
-        private readonly AbsensiService $absensiService,
-        private readonly TransactionService $transactionService,
-        private readonly ResponseService $responseService,
+        private readonly AbsensiService $service,
+        private readonly TransactionService $transaction,
+        private readonly ResponseService $response,
     ) {}
 
     public function index(): View
     {
-        return view('admin.absensi.index', [
-            'sdms' => $this->absensiService->getSdmDropdown(),
-            'jadwals' => $this->absensiService->getJadwalDropdown(),
-        ]);
+        $toPlainArray = static fn($r) => is_array($r) ? $r : (method_exists($r, 'toArray') ? $r->toArray() : (array) $r);
+
+
+        $sdmOptions = $this->service->sdmOptions()->map($toPlainArray)->all();
+        $jadwalOptions = $this->service->jadwalOptions()->map($toPlainArray)->all();
+        $jenisAbsenOptions = $this->service->jenisAbsenOptions()->map($toPlainArray)->all();
+
+        return view('admin.absensi.index', compact('sdmOptions', 'jadwalOptions', 'jenisAbsenOptions'));
     }
 
-    public function datatable(Request $request): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        return $this->transactionService->handleWithDataTable(
-            fn() => $this->absensiService->getListData($request),
-            [
-                'aksi' => function ($row) {
-                    $id = (int) $row->id_absensi;
-                    return implode(' ', [
-                        "<button type='button' class='btn btn-icon btn-bg-light btn-active-text-primary btn-sm m-1' title='Detail' onclick='openDetailAbsensi($id)'><span class='bi bi-file-text'></span></button>",
-                        "<button type='button' class='btn btn-icon btn-bg-light btn-active-text-primary btn-sm m-1' title='Edit' onclick='openEditAbsensi($id)'><span class='bi bi-pencil'></span></button>",
-                        "<button type='button' class='btn btn-icon btn-bg-light btn-active-text-danger btn-sm m-1' title='Hapus' onclick='deleteAbsensi($id)'><span class='bi bi-trash'></span></button>",
-                    ]);
-                },
+        // DEBUG: Log received filter parameters
+        \Log::info('Absensi List Filter:', [
+            'tanggal_mulai' => $request->get('tanggal_mulai'),
+            'tanggal_selesai' => $request->get('tanggal_selesai'),
+            'id_sdm' => $request->get('id_sdm'),
+        ]);
 
+        $sdmMap = $this->service->sdmOptions()
+            ->mapWithKeys(function ($r) {
+                $a = (array) $r;
+                return [(int) ($a['id_sdm'] ?? 0) => (string) ($a['nama'] ?? '')];
+            })
+            ->filter()
+            ->all();
+
+        $jadwalMap = $this->service->jadwalOptions()
+            ->mapWithKeys(function ($r) {
+                $a = (array) $r;
+                $id = (int) ($a['id_jadwal_karyawan'] ?? 0);
+                $nama = (string) ($a['nama'] ?? $a['nama_jadwal'] ?? '');
+                return [$id => $nama];
+            })
+            ->all();
+
+        return $this->transaction->handleWithDataTable(
+            fn() => $this->service->listQuery(
+                $request->get('tanggal_mulai'),
+                $request->get('tanggal_selesai'),
+                $request->get('id_sdm') ? (int) $request->get('id_sdm') : null,
+            ),
+            [
+                'action' => fn($row) => '
+                    <div class="d-flex gap-1 ps-3">
+                        <button type="button" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm"
+                            onclick="openDetailAbsensi(' . $row->id_absensi . ')"><i class="bi bi-eye fs-4"></i></button>
+                        <button type="button" class="btn btn-icon btn-bg-light btn-active-color-warning btn-sm"
+                            onclick="openEditAbsensi(' . $row->id_absensi . ')"><i class="bi bi-pencil fs-4"></i></button>
+                        <button type="button" class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm"
+                            onclick="deleteAbsensi(' . $row->id_absensi . ')"><i class="bi bi-trash fs-4"></i></button>
+                    </div>',
+                'sdm' => fn($row) => $sdmMap[(int) $row->id_sdm] ?? ('SDM #' . $row->id_sdm),
+                'jadwal' => fn($row) => $jadwalMap[(int) $row->id_jadwal_karyawan] ?? ('Jadwal #' . $row->id_jadwal_karyawan),
             ]
         );
     }
 
-    public function store(AbsensiRequest $request): JsonResponse
-    {
-        return $this->transactionService->handleWithTransaction(function () use ($request) {
-            $data = $this->absensiService->create($request->validated());
-            return $this->responseService->successResponse('Data absensi berhasil dibuat', $data, 201);
-        });
-    }
-
-    // dipakai openEditAbsensi(id) -> butuh JSON tanpa wrapper
     public function show(string $id): JsonResponse
     {
-        $data = $this->absensiService->getEditData($id);
-        if (!$data) return response()->json(['message' => 'Data tidak ditemukan'], 404);
-        return response()->json($data);
+        $bundle = $this->service->getShowBundle((int) $id);
+
+        return $bundle
+            ? $this->response->successResponse('OK', $bundle)
+            : $this->response->errorResponse('Data absensi tidak ditemukan', 404);
+    }
+
+    public function store(AbsensiRequest $request): JsonResponse
+    {
+        return $this->transaction->handleWithTransactionOn('mysql', function () use ($request) {
+            $data = $request->validated();
+            $detailRows = $this->service->normalizeDetailRows($data['detail'] ?? []);
+            $id = $this->service->create($data, $detailRows);
+
+            return $this->response->successResponse('Absensi berhasil ditambahkan', ['id_absensi' => $id], 201);
+        });
     }
 
     public function update(AbsensiRequest $request, string $id): JsonResponse
     {
-        $absensi = $this->absensiService->findById($id);
-        if (!$absensi) return $this->responseService->errorResponse('Data tidak ditemukan', 404);
+        $absensi = $this->service->find((int) $id);
+        if (!$absensi) return $this->response->errorResponse('Data absensi tidak ditemukan', 404);
 
-        return $this->transactionService->handleWithTransaction(function () use ($request, $absensi) {
-            $updated = $this->absensiService->update($absensi, $request->validated());
-            return $this->responseService->successResponse('Data absensi berhasil diperbarui', $updated);
+        return $this->transaction->handleWithTransactionOn('mysql', function () use ($request, $absensi) {
+            $data = $request->validated();
+            $detailRows = $this->service->normalizeDetailRows($data['detail'] ?? []);
+            $this->service->update($absensi, $data, $detailRows);
+
+            return $this->response->successResponse('Absensi berhasil diperbarui');
         });
-    }
-
-    // dipakai openDetailAbsensi(id) -> struktur JSON khusus
-    public function detail(string $id): JsonResponse
-    {
-        $payload = $this->absensiService->getDetailPayload($id);
-        if (!$payload) return response()->json(['message' => 'Data tidak ditemukan'], 404);
-        return response()->json($payload);
     }
 
     public function destroy(string $id): JsonResponse
     {
-        return $this->transactionService->handleWithTransaction(function () use ($id) {
-            $deleted = $this->absensiService->deleteById($id);
+        $absensi = $this->service->find((int) $id);
+        if (!$absensi) return $this->response->errorResponse('Data absensi tidak ditemukan', 404);
 
-            if (!$deleted) {
-                return $this->responseService->errorResponse('Data absensi tidak ditemukan', 404);
-            }
-
-            return $this->responseService->successResponse('Berhasil menghapus data absensi');
+        return $this->transaction->handleWithTransactionOn('mysql', function () use ($absensi) {
+            $this->service->delete($absensi);
+            return $this->response->successResponse('Absensi berhasil dihapus');
         });
     }
 }

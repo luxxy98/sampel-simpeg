@@ -37,7 +37,13 @@ final class TransactionService
         } catch (Exception $exception) {
             Log::error($exception->getMessage(), ['exception' => $exception]);
 
-            return response()->json(['draw' => 0, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => [], 'error' => 'Terjadi kesalahan yang tidak terduga.'], 500);
+            return response()->json([
+                'draw' => 0, 
+                'recordsTotal' => 0, 
+                'recordsFiltered' => 0, 
+                'data' => [], 
+                'error' => 'Error: ' . $exception->getMessage()
+            ], 500);
         }
     }
 
@@ -101,7 +107,9 @@ final class TransactionService
         try {
             return DB::transaction(static fn() => $callback());
         } catch (QueryException $exception) {
-            $userMessage = $this->getQueryErrorMessage($exception->getCode());
+            $userMessage = $this->getQueryErrorMessage((string) $exception->getCode());
+
+
             Log::error($exception->getMessage(), ['exception' => $exception]);
 
             return $this->responseService->errorResponse($userMessage, 500);
@@ -115,6 +123,26 @@ final class TransactionService
             return $this->responseService->errorResponse('Terjadi kesalahan yang tidak terduga.', 500);
         }
     }
+    public function handleWithTransactionOn(string $connectionName, callable $callback): JsonResponse
+    {
+        try {
+            return DB::connection($connectionName)->transaction(static fn() => $callback());
+        } catch (QueryException $exception) {
+            $userMessage = $this->getQueryErrorMessage((string) $exception->getCode());
+            Log::error($exception->getMessage(), ['exception' => $exception]);
+
+            return $this->responseService->errorResponse($userMessage, 500);
+        } catch (Exception $exception) {
+            Log::error($exception->getMessage(), ['exception' => $exception]);
+
+            return $this->responseService->errorResponse('Terjadi kesalahan yang tidak terduga.', 500);
+        } catch (Throwable $throwable) {
+            Log::error($throwable->getMessage(), ['exception' => $throwable]);
+
+            return $this->responseService->errorResponse('Terjadi kesalahan yang tidak terduga.', 500);
+        }
+    }
+
 
     private function getQueryErrorMessage(string $errorCode): string
     {

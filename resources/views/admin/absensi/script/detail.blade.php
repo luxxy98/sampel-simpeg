@@ -1,29 +1,46 @@
-<script>
-    function openDetailAbsensi(id) {
-        $.get("{{ url('admin/absensi') }}/" + id + "/detail", function (res) {
-            // res = { absensi: {...}, detail: [...] }
-            $('#detail_tanggal').text(res.absensi.tanggal);
-            $('#detail_sdm').text(res.absensi.nama_sdm);
-            $('#detail_jadwal').text(res.absensi.jadwal);
-            $('#detail_total_jam').text(res.absensi.total_jam_kerja);
-            $('#detail_total_terlambat').text(res.absensi.total_terlambat);
-            $('#detail_total_pulang_awal').text(res.absensi.total_pulang_awal);
+<script defer>
+    async function openDetailAbsensi(id_absensi) {
+        try {
+            DataManager.openLoading();
+            const url = '{{ route('admin.absensi.show', ['id' => '___ID___']) }}'.replace('___ID___', id_absensi);
+            const res = await DataManager.readData(url);
 
-            let tbody = '';
-            res.detail.forEach(function (d) {
-                tbody += `
+            Swal.close();
+
+            if (!res.success) {
+                Swal.fire('Peringatan', res.message || 'Gagal memuat detail', 'warning');
+                return;
+            }
+
+            const a = res.data.absensi;
+            const detail = res.data.detail || [];
+
+            $('#d_tanggal').text(a.tanggal ? formatter.formatDate(a.tanggal) : '-');
+            $('#d_sdm').text(a.sdm_nama || ('SDM #' + a.id_sdm));
+            $('#d_jadwal').text(a.jadwal_nama || ('Jadwal #' + a.id_jadwal_karyawan));
+
+            $('#d_total_jam_kerja').text(a.total_jam_kerja ?? '0.00');
+            $('#d_total_terlambat').text(a.total_terlambat ?? '0.00');
+            $('#d_total_pulang_awal').text(a.total_pulang_awal ?? '0.00');
+
+            const $tbody = $('#table_detail_view tbody');
+            $tbody.html('');
+            detail.forEach((d, i) => {
+                $tbody.append(`
                     <tr>
-                        <td>${d.nama_absen}</td>
-                        <td>${d.kategori}</td>
-                        <td>${d.waktu_mulai ?? '-'}</td>
-                        <td>${d.waktu_selesai ?? '-'}</td>
-                        <td>${d.durasi_jam}</td>
+                        <td>${i+1}</td>
+                        <td>${d.nama_absen || ('Jenis #' + d.id_jenis_absen)}</td>
+                        <td>${d.waktu_mulai ? formatter.formatDate(d.waktu_mulai) : '-'}</td>
+                        <td>${d.waktu_selesai ? formatter.formatDate(d.waktu_selesai) : '-'}</td>
+                        <td>${d.durasi_jam ?? '0.00'}</td>
                         <td>${d.lokasi_pulang ?? '-'}</td>
-                    </tr>`;
+                    </tr>
+                `);
             });
 
-            $('#detail_tbody_absensi_detail').html(tbody);
-            $('#form_detail_absensi').modal('show');
-        });
+            $('#form_detail').modal('show');
+        } catch (err) {
+            ErrorHandler.handleError(err);
+        }
     }
 </script>
