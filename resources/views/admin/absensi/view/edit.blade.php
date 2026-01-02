@@ -77,16 +77,16 @@
                             <hr class="my-2">
                             <div class="row g-3">
                                 <div class="col-md-4">
-                                    <label class="fw-bolder mb-1">Total Jam Kerja</label>
-                                    <input type="number" step="0.01" id="edit_total_jam_kerja" name="total_jam_kerja" class="form-control form-control-sm">
+                                    <label class="fw-bolder mb-1">Total Jam Kerja <small class="text-muted">(otomatis)</small></label>
+                                    <input type="number" step="0.01" id="edit_total_jam_kerja" name="total_jam_kerja" class="form-control form-control-sm bg-light" readonly>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="fw-bolder mb-1">Total Terlambat</label>
-                                    <input type="number" step="0.01" id="edit_total_terlambat" name="total_terlambat" class="form-control form-control-sm">
+                                    <label class="fw-bolder mb-1">Total Terlambat <small class="text-muted">(otomatis)</small></label>
+                                    <input type="number" step="0.01" id="edit_total_terlambat" name="total_terlambat" class="form-control form-control-sm bg-light" readonly>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="fw-bolder mb-1">Total Pulang Awal</label>
-                                    <input type="number" step="0.01" id="edit_total_pulang_awal" name="total_pulang_awal" class="form-control form-control-sm">
+                                    <label class="fw-bolder mb-1">Total Pulang Awal <small class="text-muted">(otomatis)</small></label>
+                                    <input type="number" step="0.01" id="edit_total_pulang_awal" name="total_pulang_awal" class="form-control form-control-sm bg-light" readonly>
                                 </div>
                             </div>
                         </div>

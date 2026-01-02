@@ -162,12 +162,12 @@ final class AbsensiService
     {
         try {
             return JadwalKaryawan::query()
-                ->select(['id_jadwal_karyawan', DB::raw('nama_jadwal as nama')])
+                ->select(['id_jadwal_karyawan', DB::raw('nama_jadwal as nama'), 'jam_masuk', 'jam_pulang'])
                 ->orderBy('nama_jadwal')
                 ->get()
                 ->map(fn ($r) => $r->toArray());
         } catch (Throwable) {
-            return collect([['id_jadwal_karyawan' => 1, 'nama' => 'Default (#1)']]);
+            return collect([['id_jadwal_karyawan' => 1, 'nama' => 'Default (#1)', 'jam_masuk' => '07:00:00', 'jam_pulang' => '15:00:00']]);
         }
     }
 

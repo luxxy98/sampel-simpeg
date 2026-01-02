@@ -1,4 +1,16 @@
 <script defer>
+    // Data jadwal dengan jam_masuk dan jam_pulang
+    const jadwalData = @json($jadwalOptions ?? []);
+    
+    // ID jenis absen HADIR (untuk filter perhitungan)
+    const HADIR_IDS = [
+        @foreach($jenisAbsenOptions ?? [] as $j)
+            @if(strtoupper($j['nama_absen'] ?? '') === 'HADIR')
+                {{ $j['id_jenis_absen'] }},
+            @endif
+        @endforeach
+    ];
+
     function buildDetailRow(idx, prefix = '') {
         const jenisOptions = `@isset($jenisAbsenOptions)
             @foreach($jenisAbsenOptions as $j)
@@ -45,6 +57,74 @@
         if (diffH >= 0) $row.find(durasiSelector).val(diffH.toFixed(2));
     }
 
+    function getJadwalById(id) {
+        return jadwalData.find(j => j.id_jadwal_karyawan == id);
+    }
+
+    function parseTimeToMinutes(timeStr) {
+        if (!timeStr) return 0;
+        const parts = timeStr.split(':');
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
+    function extractTimeFromDatetime(datetimeStr) {
+        if (!datetimeStr) return null;
+        // Format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss"
+        const match = datetimeStr.match(/(\d{2}):(\d{2})/);
+        if (match) {
+            return parseInt(match[1]) * 60 + parseInt(match[2]);
+        }
+        return null;
+    }
+
+    function recalculateTotals() {
+        const jadwalId = $('#id_jadwal_karyawan').val();
+        const jadwal = getJadwalById(jadwalId);
+        
+        if (!jadwal) {
+            $('#total_jam_kerja').val('0.00');
+            $('#total_terlambat').val('0.00');
+            $('#total_pulang_awal').val('0.00');
+            return;
+        }
+
+        const jamMasukMenit = parseTimeToMinutes(jadwal.jam_masuk);
+        const jamPulangMenit = parseTimeToMinutes(jadwal.jam_pulang);
+
+        let totalJamKerja = 0;
+        let totalTerlambat = 0;
+        let totalPulangAwal = 0;
+
+        $('#table_detail_create tbody tr').each(function() {
+            const $row = $(this);
+            const jenisAbsen = $row.find('.detail_jenis').val();
+            const durasi = parseFloat($row.find('.detail_durasi').val()) || 0;
+            const waktuMulai = $row.find('.detail_mulai').val();
+            const waktuSelesai = $row.find('.detail_selesai').val();
+
+            // Hitung hanya untuk jenis HADIR
+            if (HADIR_IDS.includes(parseInt(jenisAbsen))) {
+                totalJamKerja += durasi;
+
+                // Hitung keterlambatan (jam datang > jam masuk jadwal)
+                const jamDatangMenit = extractTimeFromDatetime(waktuMulai);
+                if (jamDatangMenit !== null && jamDatangMenit > jamMasukMenit) {
+                    totalTerlambat += (jamDatangMenit - jamMasukMenit) / 60;
+                }
+
+                // Hitung pulang awal (jam pulang < jam pulang jadwal)
+                const jamPulangAktualMenit = extractTimeFromDatetime(waktuSelesai);
+                if (jamPulangAktualMenit !== null && jamPulangAktualMenit < jamPulangMenit) {
+                    totalPulangAwal += (jamPulangMenit - jamPulangAktualMenit) / 60;
+                }
+            }
+        });
+
+        $('#total_jam_kerja').val(totalJamKerja.toFixed(2));
+        $('#total_terlambat').val(totalTerlambat.toFixed(2));
+        $('#total_pulang_awal').val(totalPulangAwal.toFixed(2));
+    }
+
     $('#form_create').on('show.bs.modal', function () {
         $('#tanggal').flatpickr({ dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
 
@@ -67,11 +147,24 @@
         $tbody.off('click', '.btn_remove_row').on('click', '.btn_remove_row', function () {
             $(this).closest('tr').remove();
             reindexTable($tbody);
+            recalculateTotals();
         });
 
+        // Recalculate when time changes
         $tbody.off('change', '.detail_mulai, .detail_selesai').on('change', '.detail_mulai, .detail_selesai', function () {
             const $row = $(this).closest('tr');
             computeDuration($row, '.detail_durasi', '.detail_mulai', '.detail_selesai');
+            recalculateTotals();
+        });
+
+        // Recalculate when jenis absen changes
+        $tbody.off('change', '.detail_jenis').on('change', '.detail_jenis', function () {
+            recalculateTotals();
+        });
+
+        // Recalculate when jadwal changes
+        $('#id_jadwal_karyawan').off('change.calc').on('change.calc', function() {
+            recalculateTotals();
         });
 
         $('#bt_submit_create').off('submit').on('submit', function (e) {

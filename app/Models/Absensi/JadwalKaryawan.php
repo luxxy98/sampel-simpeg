@@ -12,5 +12,5 @@ class JadwalKaryawan extends Model
     public $timestamps = false;
 
    
-    protected $fillable = ['nama_jadwal', 'keterangan'];
+    protected $fillable = ['nama_jadwal', 'keterangan', 'jam_masuk', 'jam_pulang'];
 }

@@ -93,7 +93,7 @@ final class GajiKomponenController extends Controller
         $row = $this->service->findById((int)$id);
         if (!$row) return $this->responseService->errorResponse('Data tidak ditemukan', 404);
 
-        return $this->transactionService->handleWithTransaction('absensigaji',function () use ($row) {
+        return $this->transactionService->handleWithTransactionOn('absensigaji', function () use ($row) {
             $this->service->delete($row);
             return $this->responseService->successResponse('Komponen gaji berhasil dihapus');
         });

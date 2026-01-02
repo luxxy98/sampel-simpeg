@@ -63,13 +63,13 @@
                     <table id="example" class="table table-sm align-middle table-row-bordered table-row-solid gs-0 gy-2">
                         <thead>
                         <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0 fs-sm-8 fs-lg-6">
-                            <th class="min-w-75px ps-5">Aksi</th>
-                            <th class="min-w-200px">Periode</th>
-                            <th class="min-w-260px">SDM</th>
-                            <th class="min-w-160px">Total Penghasilan</th>
-                            <th class="min-w-160px">Total Potongan</th>
-                            <th class="min-w-170px">Take Home Pay</th>
-                            <th class="min-w-140px">Status</th>
+                            <th class="ps-5" style="width: 60px;">Aksi</th>
+                            <th style="width: 90px;">Periode</th>
+                            <th style="min-width: 120px;">SDM</th>
+                            <th style="min-width: 130px;" class="text-end">Total Penghasilan</th>
+                            <th style="min-width: 120px;" class="text-end">Total Potongan</th>
+                            <th style="min-width: 130px;" class="text-end">Take Home Pay</th>
+                            <th style="width: 80px;">Status</th>
                         </tr>
                         </thead>
                         <tbody class="text-gray-800 fw-bolder fs-sm-8 fs-lg-6"></tbody>
