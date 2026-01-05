@@ -23,12 +23,19 @@ final class AbsensiController extends Controller
     {
         $toPlainArray = static fn($r) => is_array($r) ? $r : (method_exists($r, 'toArray') ? $r->toArray() : (array) $r);
 
-
         $sdmOptions = $this->service->sdmOptions()->map($toPlainArray)->all();
         $jadwalOptions = $this->service->jadwalOptions()->map($toPlainArray)->all();
         $jenisAbsenOptions = $this->service->jenisAbsenOptions()->map($toPlainArray)->all();
+        $tarifLemburOptions = $this->service->tarifLemburOptions()->map($toPlainArray)->all();
+        $holidayDates = $this->service->getHolidayDates()->all();
 
-        return view('admin.absensi.index', compact('sdmOptions', 'jadwalOptions', 'jenisAbsenOptions'));
+        return view('admin.absensi.index', compact(
+            'sdmOptions', 
+            'jadwalOptions', 
+            'jenisAbsenOptions',
+            'tarifLemburOptions',
+            'holidayDates'
+        ));
     }
 
     public function list(Request $request): JsonResponse
@@ -122,5 +129,19 @@ final class AbsensiController extends Controller
             $this->service->delete($absensi);
             return $this->response->successResponse('Absensi berhasil dihapus');
         });
+    }
+
+    /**
+     * Check if a date is a holiday (AJAX endpoint)
+     */
+    public function checkHoliday(Request $request): JsonResponse
+    {
+        $tanggal = $request->get('tanggal');
+        if (!$tanggal) {
+            return $this->response->errorResponse('Tanggal diperlukan', 400);
+        }
+
+        $info = $this->service->getHolidayInfo($tanggal);
+        return $this->response->successResponse('OK', $info);
     }
 }

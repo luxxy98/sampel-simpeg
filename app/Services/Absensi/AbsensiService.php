@@ -6,6 +6,8 @@ use App\Models\Absensi\Absensi;
 use App\Models\Absensi\AbsensiDetail;
 use App\Models\Absensi\AbsenJenis;
 use App\Models\Absensi\JadwalKaryawan;
+use App\Models\Gaji\TarifLembur;
+use App\Models\Referensi\HariLibur;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -14,21 +16,25 @@ use Throwable;
 
 final class AbsensiService
 {
+    /**
+     * Get list query for DataTable
+     */
     public function listQuery(?string $tanggalMulai = null, ?string $tanggalSelesai = null, ?int $idSdm = null): Builder
     {
-        // Gunakan Eloquent agar otomatis pakai koneksi yg ada di Model
         $q = Absensi::query()
             ->select([
-                'id_absensi', // tanpa alias 'a.' karena Eloquent
+                'id_absensi',
                 'tanggal',
                 'id_sdm',
                 'id_jadwal_karyawan',
                 'total_jam_kerja',
                 'total_terlambat',
                 'total_pulang_awal',
+                'total_lembur',
+                'is_hari_libur',
+                'nominal_lembur',
             ]);
 
-        // Debug: Sementara komentar filter dulu untuk memastikan data muncul
         if ($tanggalMulai) $q->whereDate('tanggal', '>=', $tanggalMulai);
         if ($tanggalSelesai) $q->whereDate('tanggal', '<=', $tanggalSelesai);
         if ($idSdm) $q->where('id_sdm', $idSdm);
@@ -49,6 +55,16 @@ final class AbsensiService
         $abs = $absensi->toArray();
         $abs['sdm_nama'] = $this->getSdmName((int) $absensi->id_sdm) ?? ('SDM #' . $absensi->id_sdm);
         $abs['jadwal_nama'] = $this->getJadwalName((int) $absensi->id_jadwal_karyawan) ?? ('Jadwal #' . $absensi->id_jadwal_karyawan);
+        
+        // Get tarif lembur name if exists
+        if ($absensi->id_tarif_lembur) {
+            $tarif = TarifLembur::find($absensi->id_tarif_lembur);
+            $abs['tarif_lembur_nama'] = $tarif?->nama_tarif ?? '-';
+            $abs['tarif_per_jam'] = $tarif?->tarif_per_jam ?? 0;
+        } else {
+            $abs['tarif_lembur_nama'] = '-';
+            $abs['tarif_per_jam'] = 0;
+        }
 
         $detail = DB::connection('mysql')->table('absensi_detail as ad')
             ->leftJoin('absen_jenis as aj', 'aj.id_jenis_absen', '=', 'ad.id_jenis_absen')
@@ -71,8 +87,23 @@ final class AbsensiService
         return ['absensi' => $abs, 'detail' => $detail];
     }
 
+    /**
+     * Create absensi with automatic holiday detection and overtime calculation
+     */
     public function create(array $data, array $detailRows): int
     {
+        // Check if date is a holiday
+        $isHariLibur = $this->isHoliday($data['tanggal']);
+        
+        // Get appropriate tarif lembur based on holiday status
+        $tarifLembur = $this->getTarifLembur($isHariLibur);
+        $idTarifLembur = $tarifLembur?->id_tarif ?? null;
+        $tarifPerJam = $tarifLembur?->tarif_per_jam ?? 0;
+        
+        // Calculate nominal lembur
+        $totalLembur = (float) ($data['total_lembur'] ?? 0);
+        $nominalLembur = $totalLembur * $tarifPerJam;
+
         $absensi = Absensi::create([
             'tanggal' => $data['tanggal'],
             'id_jadwal_karyawan' => $data['id_jadwal_karyawan'],
@@ -80,6 +111,10 @@ final class AbsensiService
             'total_jam_kerja' => $data['total_jam_kerja'] ?? 0,
             'total_terlambat' => $data['total_terlambat'] ?? 0,
             'total_pulang_awal' => $data['total_pulang_awal'] ?? 0,
+            'total_lembur' => $totalLembur,
+            'is_hari_libur' => $isHariLibur ? 1 : 0,
+            'id_tarif_lembur' => $idTarifLembur,
+            'nominal_lembur' => $nominalLembur,
         ]);
 
         foreach ($detailRows as $row) {
@@ -90,8 +125,23 @@ final class AbsensiService
         return (int) $absensi->getKey();
     }
 
+    /**
+     * Update absensi with automatic holiday detection and overtime calculation
+     */
     public function update(Absensi $absensi, array $data, array $detailRows): void
     {
+        // Check if date is a holiday
+        $isHariLibur = $this->isHoliday($data['tanggal']);
+        
+        // Get appropriate tarif lembur based on holiday status
+        $tarifLembur = $this->getTarifLembur($isHariLibur);
+        $idTarifLembur = $tarifLembur?->id_tarif ?? null;
+        $tarifPerJam = $tarifLembur?->tarif_per_jam ?? 0;
+        
+        // Calculate nominal lembur
+        $totalLembur = (float) ($data['total_lembur'] ?? 0);
+        $nominalLembur = $totalLembur * $tarifPerJam;
+
         $absensi->update([
             'tanggal' => $data['tanggal'],
             'id_jadwal_karyawan' => $data['id_jadwal_karyawan'],
@@ -99,6 +149,10 @@ final class AbsensiService
             'total_jam_kerja' => $data['total_jam_kerja'] ?? 0,
             'total_terlambat' => $data['total_terlambat'] ?? 0,
             'total_pulang_awal' => $data['total_pulang_awal'] ?? 0,
+            'total_lembur' => $totalLembur,
+            'is_hari_libur' => $isHariLibur ? 1 : 0,
+            'id_tarif_lembur' => $idTarifLembur,
+            'nominal_lembur' => $nominalLembur,
         ]);
 
         AbsensiDetail::query()->where('id_absensi', (int) $absensi->getKey())->delete();
@@ -113,6 +167,88 @@ final class AbsensiService
     {
         AbsensiDetail::query()->where('id_absensi', (int) $absensi->getKey())->delete();
         $absensi->delete();
+    }
+
+    /**
+     * Check if a date is a holiday (Sunday or in hari_libur table)
+     */
+    public function isHoliday(string $date): bool
+    {
+        // Check if Sunday (day of week = 0)
+        $dayOfWeek = date('w', strtotime($date));
+        if ($dayOfWeek == 0) {
+            return true;
+        }
+
+        // Check in hari_libur table
+        return HariLibur::where('tanggal', $date)->exists();
+    }
+
+    /**
+     * Get appropriate tarif lembur based on holiday status
+     * Returns "Lembur Libur" for holidays, "Lembur Biasa" for regular days
+     */
+    public function getTarifLembur(bool $isHariLibur): ?TarifLembur
+    {
+        if ($isHariLibur) {
+            // Try to find "Lembur Libur" tarif
+            $tarif = TarifLembur::where('nama_tarif', 'LIKE', '%Libur%')->first();
+            if ($tarif) return $tarif;
+        }
+        
+        // Default to "Lembur Biasa" or first available tarif
+        $tarif = TarifLembur::where('nama_tarif', 'LIKE', '%Biasa%')->first();
+        if ($tarif) return $tarif;
+        
+        // Fallback to first tarif
+        return TarifLembur::first();
+    }
+
+    /**
+     * Get holiday info for a specific date (for AJAX)
+     */
+    public function getHolidayInfo(string $date): array
+    {
+        $isHoliday = $this->isHoliday($date);
+        $tarif = $this->getTarifLembur($isHoliday);
+        
+        $holidayName = null;
+        if ($isHoliday) {
+            $dayOfWeek = date('w', strtotime($date));
+            if ($dayOfWeek == 0) {
+                $holidayName = 'Hari Minggu';
+            } else {
+                $libur = HariLibur::where('tanggal', $date)->first();
+                $holidayName = $libur?->nama ?? 'Hari Libur';
+            }
+        }
+        
+        return [
+            'is_hari_libur' => $isHoliday,
+            'holiday_name' => $holidayName,
+            'id_tarif_lembur' => $tarif?->id_tarif,
+            'nama_tarif' => $tarif?->nama_tarif,
+            'tarif_per_jam' => $tarif?->tarif_per_jam ?? 0,
+        ];
+    }
+
+    /**
+     * Get all holidays for calendar/reference
+     */
+    public function getHolidayDates(): Collection
+    {
+        return HariLibur::pluck('tanggal')->map(fn($d) => $d->format('Y-m-d'));
+    }
+
+    /**
+     * Get tarif lembur options for dropdown
+     */
+    public function tarifLemburOptions(): Collection
+    {
+        return TarifLembur::query()
+            ->select(['id_tarif', 'nama_tarif', 'tarif_per_jam'])
+            ->orderBy('nama_tarif')
+            ->get();
     }
 
     public function normalizeDetailRows(array $detail): array
@@ -196,3 +332,4 @@ final class AbsensiService
         }
     }
 }
+

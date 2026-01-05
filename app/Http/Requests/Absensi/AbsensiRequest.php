@@ -14,12 +14,15 @@ final class AbsensiRequest extends FormRequest
     /** toleransi selisih durasi vs selisih waktu (dalam jam). 0.05 jam ≈ 3 menit */
     private const DURATION_TOLERANCE_HOURS = 0.05;
 
-    /** batas aman durasi 1 baris detail (dalam jam) - jam operasional 07:00-23:00 = 16 jam */
-    private const MAX_DETAIL_HOURS = 16;
+    /** batas aman durasi 1 baris detail (dalam jam) - jam operasional + lembur = 18 jam */
+    private const MAX_DETAIL_HOURS = 18;
 
     /** jam operasional perusahaan */
     private const WORKING_HOUR_START = 7;  // 07:00
     private const WORKING_HOUR_END = 23;   // 23:00
+    
+    /** batas maksimal lembur (01:00 = jam 1 di hari berikutnya) */
+    private const OVERTIME_HOUR_END = 1;   // 01:00 (next day)
 
     public function authorize(): bool
     {
@@ -55,6 +58,16 @@ final class AbsensiRequest extends FormRequest
                 $start = Carbon::parse($mulai);
                 $end   = Carbon::parse($selesai);
                 
+                // Auto-koreksi tanggal waktu selesai untuk lembur dini hari
+                // Jika jam mulai >= 12 dan jam selesai 00-01, maka user pasti maksud hari berikutnya
+                $startHour = (int) $start->format('H');
+                $endHour = (int) $end->format('H');
+                
+                if ($startHour >= 12 && $endHour <= self::OVERTIME_HOUR_END && $end->toDateString() === $start->toDateString()) {
+                    // User input jam 00:00-01:00 di hari yang sama padahal maksudnya hari berikutnya
+                    $end = $end->addDay();
+                }
+                
                 // Update arrays with normalized format
                 $mulaiArr[$i] = $start->format('Y-m-d H:i:s');
                 $selesaiArr[$i] = $end->format('Y-m-d H:i:s');
@@ -88,6 +101,7 @@ final class AbsensiRequest extends FormRequest
             'total_jam_kerja' => ['nullable', 'numeric', 'min:0'],
             'total_terlambat' => ['nullable', 'numeric', 'min:0'],
             'total_pulang_awal' => ['nullable', 'numeric', 'min:0'],
+            'total_lembur' => ['nullable', 'numeric', 'min:0'],
 
             // detail masih boleh nullable agar request lama tidak langsung pecah,
             // tapi akan kita paksa minimal 1 baris via withValidator().
@@ -203,26 +217,34 @@ final class AbsensiRequest extends FormRequest
                     continue;
                 }
 
-                // validasi jam operasional perusahaan (07:00 - 23:00)
+                // validasi jam operasional perusahaan (07:00 - 23:00) + lembur sampai 01:00
                 $startHour = (int) $start->format('H');
                 $endHour = (int) $end->format('H');
+                $isSameDay = $end->toDateString() === $start->toDateString();
+                $isNextDay = $end->toDateString() === $start->copy()->addDay()->toDateString();
                 
+                // Waktu mulai harus dalam jam operasional (07:00 - 23:00)
                 if ($startHour < self::WORKING_HOUR_START || $startHour >= self::WORKING_HOUR_END) {
-                    $validator->errors()->add("detail.waktu_mulai.$i", 'Waktu mulai harus dalam jam operasional perusahaan (07:00 - 23:00). Perusahaan tutup di luar jam tersebut.');
+                    $validator->errors()->add("detail.waktu_mulai.$i", 'Waktu mulai harus dalam jam operasional perusahaan (07:00 - 23:00).');
                     continue;
                 }
                 
-                // Untuk waktu selesai, boleh sampai jam 23:00 (batas akhir)
-                // tapi tidak boleh mulai baru setelah 23:00 atau sebelum 07:00
-                if ($end->toDateString() === $start->toDateString()) {
-                    // Jika selesai di hari yang sama, harus dalam jam operasional
-                    if ($endHour < self::WORKING_HOUR_START || $endHour > self::WORKING_HOUR_END) {
-                        $validator->errors()->add("detail.waktu_selesai.$i", 'Waktu selesai harus dalam jam operasional perusahaan (07:00 - 23:00).');
+                // Validasi waktu selesai
+                if ($isSameDay) {
+                    // Jika selesai di hari yang sama, harus dalam jam operasional (07:00 - 23:59)
+                    if ($endHour < self::WORKING_HOUR_START) {
+                        $validator->errors()->add("detail.waktu_selesai.$i", 'Waktu selesai harus dalam jam operasional perusahaan (07:00 - 01:00).');
+                        continue;
+                    }
+                } elseif ($isNextDay) {
+                    // Jika nyebrang hari (lembur), hanya boleh sampai jam 01:00
+                    if ($endHour > self::OVERTIME_HOUR_END) {
+                        $validator->errors()->add("detail.waktu_selesai.$i", 'Lembur maksimal sampai jam 01:00. Waktu selesai melampaui batas lembur.');
                         continue;
                     }
                 } else {
-                    // Jika nyebrang hari, tidak diperbolehkan karena perusahaan tutup 23:00-07:00
-                    $validator->errors()->add("detail.waktu_selesai.$i", 'Absensi tidak boleh melewati jam tutup perusahaan (23:00). Perusahaan tutup 23:00 - 07:00.');
+                    // Lebih dari 1 hari tidak diperbolehkan
+                    $validator->errors()->add("detail.waktu_selesai.$i", 'Waktu selesai tidak valid. Maksimal lembur sampai jam 01:00 hari berikutnya.');
                     continue;
                 }
 

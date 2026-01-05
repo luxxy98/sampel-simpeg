@@ -13,9 +13,10 @@
                 </div>
 
                 <div class="row g-3 mb-4">
-                    <div class="col-md-4"><div class="fw-bolder">Total Penghasilan</div><div id="d_total_penghasilan" class="text-muted"></div></div>
-                    <div class="col-md-4"><div class="fw-bolder">Total Potongan</div><div id="d_total_potongan" class="text-muted"></div></div>
-                    <div class="col-md-4"><div class="fw-bolder">Take Home Pay</div><div id="d_thp" class="text-muted"></div></div>
+                    <div class="col-md-3"><div class="fw-bolder">Total Penghasilan</div><div id="d_total_penghasilan" class="text-muted"></div></div>
+                    <div class="col-md-3"><div class="fw-bolder">Total Potongan</div><div id="d_total_potongan" class="text-muted"></div></div>
+                    <div class="col-md-3"><div class="fw-bolder text-success">Uang Lembur</div><div id="d_uang_lembur" class="text-success fw-bold"></div></div>
+                    <div class="col-md-3"><div class="fw-bolder text-primary">Take Home Pay</div><div id="d_thp" class="text-primary fw-bold"></div></div>
                 </div>
 
                 <hr>

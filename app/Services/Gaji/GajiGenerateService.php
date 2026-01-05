@@ -127,15 +127,19 @@ final class GajiGenerateService
         // 3. Hitung potongan telat (exclude tanggal ALPHA/CUTI)
         $potonganTelat = $this->hitungPotonganTelat($idSdm, $startDate, $endDate, $upahPerJam);
 
-        // 4. Total
+        // 3.5 Hitung Lembur dari absensi.nominal_lembur
+        $lembur = $this->hitungLembur($idSdm, $startDate, $endDate);
+
+        // 4. Total (termasuk lembur)
         $totalPotongan = $potonganHarian['total'] + $potonganTelat['total'];
-        $takeHomePay = $gajiBulanan - $totalPotongan;
+        $totalPenghasilan = $gajiBulanan + $lembur['nominal'];
+        $takeHomePay = $totalPenghasilan - $totalPotongan;
 
         // 5. Simpan/Update gaji_trx
         $gajiTrx = GajiTrx::updateOrCreate(
             ['id_periode' => $idPeriode, 'id_sdm' => $idSdm],
             [
-                'total_penghasilan' => $gajiBulanan,
+                'total_penghasilan' => $totalPenghasilan,
                 'total_potongan' => $totalPotongan,
                 'total_take_home_pay' => $takeHomePay,
                 'status' => 'DRAFT',
@@ -181,6 +185,16 @@ final class GajiGenerateService
                 'id_gaji_komponen' => null,
                 'nominal' => -$potonganTelat['total'],
                 'keterangan' => "Potongan TELAT: {$potonganTelat['jam_telat']} jam x Rp " . number_format($upahPerJam, 0, ',', '.'),
+            ]);
+        }
+
+        // Insert detail lembur (penghasilan tambahan)
+        if ($lembur['nominal'] > 0) {
+            GajiDetail::create([
+                'id_gaji' => $gajiTrx->id_gaji,
+                'id_gaji_komponen' => null,
+                'nominal' => $lembur['nominal'],
+                'keterangan' => "Uang Lembur: " . number_format($lembur['jam_lembur'], 2) . " jam = Rp " . number_format($lembur['nominal'], 0, ',', '.'),
             ]);
         }
     }
@@ -272,6 +286,29 @@ final class GajiGenerateService
         return [
             'jam_telat' => $jamTelat,
             'total' => $total,
+        ];
+    }
+
+    /**
+     * Hitung total lembur dari absensi.nominal_lembur
+     */
+    private function hitungLembur(int $idSdm, Carbon $startDate, Carbon $endDate): array
+    {
+        // Total jam lembur
+        $totalJam = DB::connection('mysql')->table('absensi')
+            ->where('id_sdm', $idSdm)
+            ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->sum('total_lembur');
+
+        // Total nominal lembur (sudah dihitung saat input absensi)
+        $totalNominal = DB::connection('mysql')->table('absensi')
+            ->where('id_sdm', $idSdm)
+            ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->sum('nominal_lembur');
+
+        return [
+            'jam_lembur' => (float) ($totalJam ?? 0),
+            'nominal' => (float) ($totalNominal ?? 0),
         ];
     }
 }

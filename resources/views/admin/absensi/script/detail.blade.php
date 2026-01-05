@@ -22,6 +22,20 @@
             $('#d_total_jam_kerja').text(a.total_jam_kerja ?? '0.00');
             $('#d_total_terlambat').text(a.total_terlambat ?? '0.00');
             $('#d_total_pulang_awal').text(a.total_pulang_awal ?? '0.00');
+            $('#d_total_lembur').text(a.total_lembur ?? '0.00');
+            
+            // Lembur Info Section
+            const formatRupiah = (num) => 'Rp ' + new Intl.NumberFormat('id-ID').format(num || 0);
+            const totalLembur = parseFloat(a.total_lembur) || 0;
+            
+            if (totalLembur > 0) {
+                $('#d_lembur_section').show();
+                $('#d_tarif_lembur_nama').text(a.tarif_lembur_nama || '-');
+                $('#d_tarif_per_jam').text(formatRupiah(a.tarif_per_jam));
+                $('#d_nominal_lembur').text(formatRupiah(a.nominal_lembur));
+            } else {
+                $('#d_lembur_section').hide();
+            }
 
             const $tbody = $('#table_detail_view tbody');
             $tbody.html('');

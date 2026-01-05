@@ -48,6 +48,10 @@
             href="{{ route('admin.gaji.distribusi.index') }}">
             <span class="menu-title px-4">Distribusi Transfer</span>
         </a>
+        <a class="menu-link {{ request()->routeIs('admin.gaji.tarif-lembur.*') ? 'active' : '' }}"
+            href="{{ route('admin.gaji.tarif-lembur.index') }}">
+            <span class="menu-title px-4">Tarif Lembur</span>
+        </a>
     </div>
 </div>
 
@@ -57,7 +61,8 @@
                     request()->routeIs('admin.ref.jenjang-pendidikan.*') ||
                     request()->routeIs('admin.ref.hubungan-keluarga.*') ||
                     request()->routeIs('admin.ref.jenis-asuransi.*') ||
-                    request()->routeIs('admin.ref.eselon.*');
+                    request()->routeIs('admin.ref.eselon.*') ||
+                    request()->routeIs('admin.referensi.hari-libur.*');
             @endphp
             <div data-kt-menu-trigger="click"
                 class="menu-item menu-accordion {{ $referensiActive ? 'here show' : '' }}">
@@ -81,6 +86,10 @@
                     <a class="menu-link {{ request()->routeIs('admin.ref.eselon.*') ? 'active' : '' }}"
                         href="{{ route('admin.ref.eselon.index') }}">
                         <span class="menu-title px-4">Eselon</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.referensi.hari-libur.*') ? 'active' : '' }}"
+                        href="{{ route('admin.referensi.hari-libur.index') }}">
+                        <span class="menu-title px-4">Hari Libur</span>
                     </a>
                 </div>
             </div>

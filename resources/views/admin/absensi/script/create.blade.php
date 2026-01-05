@@ -2,6 +2,12 @@
     // Data jadwal dengan jam_masuk dan jam_pulang
     const jadwalData = @json($jadwalOptions ?? []);
     
+    // Data tarif lembur
+    const tarifLemburData = @json($tarifLemburOptions ?? []);
+    
+    // Data hari libur
+    const holidayDates = @json($holidayDates ?? []);
+    
     // ID jenis absen HADIR (untuk filter perhitungan)
     const HADIR_IDS = [
         @foreach($jenisAbsenOptions ?? [] as $j)
@@ -10,6 +16,9 @@
             @endif
         @endforeach
     ];
+
+    // URL untuk check holiday via AJAX
+    const CHECK_HOLIDAY_URL = '{{ route("admin.absensi.check-holiday") }}';
 
     function buildDetailRow(idx, prefix = '') {
         const jenisOptions = `@isset($jenisAbsenOptions)
@@ -69,12 +78,89 @@
 
     function extractTimeFromDatetime(datetimeStr) {
         if (!datetimeStr) return null;
-        // Format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss"
         const match = datetimeStr.match(/(\d{2}):(\d{2})/);
         if (match) {
             return parseInt(match[1]) * 60 + parseInt(match[2]);
         }
         return null;
+    }
+    
+    function formatRupiah(amount) {
+        return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+    }
+
+    function checkHoliday(tanggal) {
+        if (!tanggal) {
+            updateHolidayUI(false, null, null);
+            return;
+        }
+        
+        // Quick client-side check first
+        const isSunday = new Date(tanggal).getDay() === 0;
+        const isInHolidayList = holidayDates.includes(tanggal);
+        
+        if (isSunday || isInHolidayList) {
+            // Do AJAX to get full info
+            $.get(CHECK_HOLIDAY_URL, { tanggal: tanggal }, function(response) {
+                if (response.success && response.data) {
+                    updateHolidayUI(
+                        response.data.is_hari_libur,
+                        response.data.holiday_name,
+                        response.data
+                    );
+                }
+            });
+        } else {
+            // Also do AJAX to ensure we get correct tarif
+            $.get(CHECK_HOLIDAY_URL, { tanggal: tanggal }, function(response) {
+                if (response.success && response.data) {
+                    updateHolidayUI(
+                        response.data.is_hari_libur,
+                        response.data.holiday_name,
+                        response.data
+                    );
+                }
+            }).fail(function() {
+                // Fallback: use default tarif biasa
+                updateHolidayUI(false, null, {
+                    id_tarif_lembur: tarifLemburData[0]?.id_tarif || null,
+                    nama_tarif: tarifLemburData[0]?.nama_tarif || '-',
+                    tarif_per_jam: tarifLemburData[0]?.tarif_per_jam || 0
+                });
+            });
+        }
+    }
+    
+    function updateHolidayUI(isHoliday, holidayName, tarifData) {
+        // Update holiday badge
+        if (isHoliday) {
+            $('#holiday_badge').show();
+            $('#holiday_name').text(holidayName || 'Hari Libur');
+        } else {
+            $('#holiday_badge').hide();
+        }
+        
+        // Update hidden fields
+        $('#is_hari_libur').val(isHoliday ? 1 : 0);
+        
+        if (tarifData) {
+            $('#id_tarif_lembur').val(tarifData.id_tarif_lembur || '');
+            $('#tarif_lembur_info').val(tarifData.nama_tarif || '-');
+            $('#tarif_per_jam').val(tarifData.tarif_per_jam || 0);
+            $('#tarif_per_jam_display').val(formatRupiah(tarifData.tarif_per_jam || 0));
+        }
+        
+        // Recalculate nominal lembur
+        calculateNominalLembur();
+    }
+    
+    function calculateNominalLembur() {
+        const totalLembur = parseFloat($('#total_lembur').val()) || 0;
+        const tarifPerJam = parseFloat($('#tarif_per_jam').val()) || 0;
+        const nominal = totalLembur * tarifPerJam;
+        
+        $('#nominal_lembur').val(nominal);
+        $('#nominal_lembur_display').val(formatRupiah(nominal));
     }
 
     function recalculateTotals() {
@@ -85,6 +171,8 @@
             $('#total_jam_kerja').val('0.00');
             $('#total_terlambat').val('0.00');
             $('#total_pulang_awal').val('0.00');
+            $('#total_lembur').val('0.00');
+            calculateNominalLembur();
             return;
         }
 
@@ -94,6 +182,7 @@
         let totalJamKerja = 0;
         let totalTerlambat = 0;
         let totalPulangAwal = 0;
+        let totalLembur = 0;
 
         $('#table_detail_create tbody tr').each(function() {
             const $row = $(this);
@@ -113,9 +202,21 @@
                 }
 
                 // Hitung pulang awal (jam pulang < jam pulang jadwal)
-                const jamPulangAktualMenit = extractTimeFromDatetime(waktuSelesai);
-                if (jamPulangAktualMenit !== null && jamPulangAktualMenit < jamPulangMenit) {
-                    totalPulangAwal += (jamPulangMenit - jamPulangAktualMenit) / 60;
+                let jamPulangAktualMenit = extractTimeFromDatetime(waktuSelesai);
+                
+                // Handle waktu setelah tengah malam (misal 01:00 = 25 jam dalam konteks shift malam)
+                if (jamPulangAktualMenit !== null && jamPulangAktualMenit < 7 * 60) {
+                    jamPulangAktualMenit += 24 * 60; // Tambah 24 jam jika pulang setelah tengah malam
+                }
+                
+                if (jamPulangAktualMenit !== null) {
+                    if (jamPulangAktualMenit < jamPulangMenit) {
+                        // Pulang lebih awal dari jadwal
+                        totalPulangAwal += (jamPulangMenit - jamPulangAktualMenit) / 60;
+                    } else if (jamPulangAktualMenit > jamPulangMenit) {
+                        // Lembur: pulang lebih dari jadwal
+                        totalLembur += (jamPulangAktualMenit - jamPulangMenit) / 60;
+                    }
                 }
             }
         });
@@ -123,10 +224,21 @@
         $('#total_jam_kerja').val(totalJamKerja.toFixed(2));
         $('#total_terlambat').val(totalTerlambat.toFixed(2));
         $('#total_pulang_awal').val(totalPulangAwal.toFixed(2));
+        $('#total_lembur').val(totalLembur.toFixed(2));
+        
+        // Calculate nominal lembur after updating total lembur
+        calculateNominalLembur();
     }
 
     $('#form_create').on('show.bs.modal', function () {
-        $('#tanggal').flatpickr({ dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
+        $('#tanggal').flatpickr({ 
+            dateFormat: 'Y-m-d', 
+            altInput: true, 
+            altFormat: 'd/m/Y',
+            onChange: function(selectedDates, dateStr) {
+                checkHoliday(dateStr);
+            }
+        });
 
         // init select2
         $('#id_sdm, #id_jadwal_karyawan').select2({ dropdownParent: $('#form_create') });
@@ -219,5 +331,16 @@
         $m.find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
         $m.find('.invalid-feedback, .valid-feedback, .text-danger').remove();
         $('#table_detail_create tbody').html('');
+        
+        // Reset holiday UI
+        $('#holiday_badge').hide();
+        $('#is_hari_libur').val(0);
+        $('#id_tarif_lembur').val('');
+        $('#tarif_lembur_info').val('-');
+        $('#tarif_per_jam').val(0);
+        $('#tarif_per_jam_display').val('Rp 0');
+        $('#nominal_lembur').val(0);
+        $('#nominal_lembur_display').val('Rp 0');
     });
 </script>
+

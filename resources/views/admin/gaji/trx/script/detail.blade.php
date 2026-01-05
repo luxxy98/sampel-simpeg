@@ -45,6 +45,12 @@
             $('#d_total_penghasilan').text(formatRupiah(trx.total_penghasilan));
             $('#d_total_potongan').text(formatRupiah(trx.total_potongan));
             $('#d_thp').text(formatRupiah(trx.total_take_home_pay));
+            
+            // Calculate Uang Lembur from detail (find items with 'Lembur' in keterangan)
+            const uangLembur = detail
+                .filter(d => d.keterangan && d.keterangan.toLowerCase().includes('lembur'))
+                .reduce((sum, d) => sum + (parseFloat(d.nominal) || 0), 0);
+            $('#d_uang_lembur').text(formatRupiah(uangLembur));
 
             const $tbody = $('#table_detail_gaji tbody');
             $tbody.html('');

@@ -29,17 +29,40 @@
                 </div>
 
                 <div class="row mb-4">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="fw-bolder text-gray-600 d-block mb-1">Total Jam Kerja</label>
                         <span id="d_total_jam_kerja" class="fs-6">0.00</span>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="fw-bolder text-gray-600 d-block mb-1">Total Terlambat</label>
                         <span id="d_total_terlambat" class="fs-6">0.00</span>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="fw-bolder text-gray-600 d-block mb-1">Total Pulang Awal</label>
                         <span id="d_total_pulang_awal" class="fs-6">0.00</span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="fw-bolder text-success d-block mb-1">Total Lembur</label>
+                        <span id="d_total_lembur" class="fs-6 text-success fw-bold">0.00</span>
+                    </div>
+                </div>
+
+                {{-- Info Lembur Section --}}
+                <div class="row mb-4 bg-light-success rounded p-3" id="d_lembur_section" style="display: none;">
+                    <div class="col-12 mb-2">
+                        <h6 class="fw-bolder text-success mb-0"><i class="bi bi-clock-history me-1"></i> Info Lembur</h6>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label class="fw-bolder text-gray-600 d-block mb-1">Tarif Lembur</label>
+                        <span id="d_tarif_lembur_nama" class="fs-6">-</span>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label class="fw-bolder text-gray-600 d-block mb-1">Tarif Per Jam</label>
+                        <span id="d_tarif_per_jam" class="fs-6">Rp 0</span>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label class="fw-bolder text-primary d-block mb-1">Nominal Lembur</label>
+                        <span id="d_nominal_lembur" class="fs-5 text-primary fw-bold">Rp 0</span>
                     </div>
                 </div>
 

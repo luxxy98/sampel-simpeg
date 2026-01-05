@@ -20,6 +20,10 @@ final class Absensi extends Model
         'total_jam_kerja',
         'total_terlambat',
         'total_pulang_awal',
+        'total_lembur',
+        'is_hari_libur',
+        'id_tarif_lembur',
+        'nominal_lembur',
     ];
 
     protected $casts = [
@@ -30,5 +34,9 @@ final class Absensi extends Model
         'total_jam_kerja' => 'decimal:2',
         'total_terlambat' => 'decimal:2',
         'total_pulang_awal' => 'decimal:2',
+        'total_lembur' => 'decimal:2',
+        'is_hari_libur' => 'boolean',
+        'id_tarif_lembur' => 'integer',
+        'nominal_lembur' => 'decimal:2',
     ];
 }

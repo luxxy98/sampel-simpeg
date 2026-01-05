@@ -23,6 +23,8 @@ use App\Http\Controllers\Admin\Gaji\GajiTrxController;
 use App\Http\Controllers\Admin\Gaji\GajiKomponenController;
 use App\Http\Controllers\Admin\Gaji\GajiJenisKomponenController;
 use App\Http\Controllers\Admin\Gaji\GajiDistribusiController;
+use App\Http\Controllers\Admin\Gaji\TarifLemburController;
+use App\Http\Controllers\Admin\Referensi\HariLiburController;
 
 
 Route::get('view-file/{folder}/{filename}', [PortalController::class, 'viewFile'])
@@ -246,6 +248,7 @@ Route::prefix('ref')->group(function () {
     Route::post('store', [AbsensiController::class, 'store'])->name('absensi.store');
     Route::post('update/{id}', [AbsensiController::class, 'update'])->name('absensi.update');
     Route::post('destroy/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+    Route::get('check-holiday', [AbsensiController::class, 'checkHoliday'])->name('absensi.check-holiday');
 
     Route::prefix('jenis')->group(function () {
         Route::get('/', [AbsenJenisController::class, 'index'])->name('absensi.jenis.index');
@@ -300,5 +303,23 @@ Route::prefix('ref')->group(function () {
         Route::post('update/{id}', [GajiDistribusiController::class, 'update'])->name('gaji.distribusi.update');
         Route::post('destroy/{id}', [GajiDistribusiController::class, 'destroy'])->name('gaji.distribusi.destroy');
     });
+
+    Route::prefix('tarif-lembur')->group(function () {
+        Route::get('/', [TarifLemburController::class, 'index'])->name('gaji.tarif-lembur.index');
+        Route::get('data', [TarifLemburController::class, 'list'])->name('gaji.tarif-lembur.list');
+        Route::post('store', [TarifLemburController::class, 'store'])->name('gaji.tarif-lembur.store');
+        Route::post('update/{id}', [TarifLemburController::class, 'update'])->name('gaji.tarif-lembur.update');
+        Route::post('destroy/{id}', [TarifLemburController::class, 'destroy'])->name('gaji.tarif-lembur.destroy');
+    });
 });
 
+// Referensi Routes
+Route::prefix('referensi')->group(function () {
+    Route::prefix('hari-libur')->group(function () {
+        Route::get('/', [HariLiburController::class, 'index'])->name('referensi.hari-libur.index');
+        Route::get('data', [HariLiburController::class, 'list'])->name('referensi.hari-libur.list');
+        Route::post('store', [HariLiburController::class, 'store'])->name('referensi.hari-libur.store');
+        Route::post('update/{id}', [HariLiburController::class, 'update'])->name('referensi.hari-libur.update');
+        Route::post('destroy/{id}', [HariLiburController::class, 'destroy'])->name('referensi.hari-libur.destroy');
+    });
+});
