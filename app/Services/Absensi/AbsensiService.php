@@ -7,7 +7,8 @@ use App\Models\Absensi\AbsensiDetail;
 use App\Models\Absensi\AbsenJenis;
 use App\Models\Absensi\JadwalKaryawan;
 use App\Models\Gaji\TarifLembur;
-use App\Models\Referensi\HariLibur;
+use App\Models\Ref\RefLiburNasional;
+use App\Models\Ref\RefLiburPt;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -170,18 +171,22 @@ final class AbsensiService
     }
 
     /**
-     * Check if a date is a holiday (Sunday or in hari_libur table)
+     * Check if a date is a holiday.
+     * Sumber libur:
+     * - Hari Minggu (weekly off)
+     * - ref_libur_nasional
+     * - ref_libur_pt
      */
     public function isHoliday(string $date): bool
     {
-        // Check if Sunday (day of week = 0)
-        $dayOfWeek = date('w', strtotime($date));
-        if ($dayOfWeek == 0) {
+        // Minggu
+        if ((int) date('w', strtotime($date)) === 0) {
             return true;
         }
 
-        // Check in hari_libur table
-        return HariLibur::where('tanggal', $date)->exists();
+        // Libur Nasional / Libur PT
+        return RefLiburNasional::whereDate('tanggal', $date)->exists()
+            || RefLiburPt::whereDate('tanggal', $date)->exists();
     }
 
     /**
@@ -213,19 +218,35 @@ final class AbsensiService
         $tarif = $this->getTarifLembur($isHoliday);
         
         $holidayName = null;
+        $holidayType = null;
         if ($isHoliday) {
-            $dayOfWeek = date('w', strtotime($date));
-            if ($dayOfWeek == 0) {
+            $dayOfWeek = (int) date('w', strtotime($date));
+            if ($dayOfWeek === 0) {
                 $holidayName = 'Hari Minggu';
+                $holidayType = 'MINGGU';
             } else {
-                $libur = HariLibur::where('tanggal', $date)->first();
-                $holidayName = $libur?->nama ?? 'Hari Libur';
+                $nasional = RefLiburNasional::whereDate('tanggal', $date)->first();
+                if ($nasional) {
+                    // Kolom yang tersedia di tabel ref_libur_nasional pada project ini: tanggal, keterangan
+                    $holidayName = $nasional->keterangan ?? 'Libur Nasional';
+                    $holidayType = 'NASIONAL';
+                } else {
+                    $pt = RefLiburPt::whereDate('tanggal', $date)->first();
+                    if ($pt) {
+                        $holidayName = $pt->keterangan ?? 'Libur PT';
+                        $holidayType = 'PT';
+                    } else {
+                        $holidayName = 'Hari Libur';
+                        $holidayType = 'UNKNOWN';
+                    }
+                }
             }
         }
         
         return [
             'is_hari_libur' => $isHoliday,
             'holiday_name' => $holidayName,
+            'holiday_type' => $holidayType,
             'id_tarif_lembur' => $tarif?->id_tarif,
             'nama_tarif' => $tarif?->nama_tarif,
             'tarif_per_jam' => $tarif?->tarif_per_jam ?? 0,
@@ -237,7 +258,13 @@ final class AbsensiService
      */
     public function getHolidayDates(): Collection
     {
-        return HariLibur::pluck('tanggal')->map(fn($d) => $d->format('Y-m-d'));
+        $nasional = RefLiburNasional::query()->pluck('tanggal')->map(fn($d) => $d->format('Y-m-d'));
+        $pt = RefLiburPt::query()->pluck('tanggal')->map(fn($d) => $d->format('Y-m-d'));
+
+        return $nasional
+            ->merge($pt)
+            ->unique()
+            ->values();
     }
 
     /**

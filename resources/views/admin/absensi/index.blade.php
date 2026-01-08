@@ -25,10 +25,6 @@
                     </h3>
                     <div class="card-toolbar">
                         <div class="d-flex justify-content-end gap-2">
-                            <a class="btn btn-sm btn-light-primary fs-sm-8 fs-lg-6"
-                               href="{{ route('admin.absensi.jenis.index') }}">
-                                Master Jenis Absen
-                            </a>
                             <button type="button" class="btn btn-sm btn-primary fs-sm-8 fs-lg-6"
                                     data-bs-toggle="modal" data-bs-target="#form_create">
                                 Tambah Absensi

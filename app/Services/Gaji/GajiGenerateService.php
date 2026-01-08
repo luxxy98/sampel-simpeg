@@ -217,6 +217,7 @@ final class GajiGenerateService
                 ->join('absensi_detail as ad', 'ad.id_absensi', '=', 'a.id_absensi')
                 ->where('a.id_sdm', $idSdm)
                 ->whereBetween('a.tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                ->where('a.is_hari_libur', 0)
                 ->where('ad.id_jenis_absen', $jenisAlpha)
                 ->distinct('a.tanggal')
                 ->count('a.tanggal');
@@ -229,6 +230,7 @@ final class GajiGenerateService
                 ->join('absensi_detail as ad', 'ad.id_absensi', '=', 'a.id_absensi')
                 ->where('a.id_sdm', $idSdm)
                 ->whereBetween('a.tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                ->where('a.is_hari_libur', 0)
                 ->where('ad.id_jenis_absen', $jenisCuti)
                 ->distinct('a.tanggal')
                 ->count('a.tanggal');
@@ -263,6 +265,7 @@ final class GajiGenerateService
                 ->join('absensi_detail as ad', 'ad.id_absensi', '=', 'a.id_absensi')
                 ->where('a.id_sdm', $idSdm)
                 ->whereBetween('a.tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                ->where('a.is_hari_libur', 0)
                 ->whereIn('ad.id_jenis_absen', $excludeJenis)
                 ->pluck('a.tanggal')
                 ->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))
@@ -274,6 +277,9 @@ final class GajiGenerateService
         $query = DB::connection('mysql')->table('absensi')
             ->where('id_sdm', $idSdm)
             ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+
+        // Hari libur tidak ada potongan telat
+        $query->where('is_hari_libur', 0);
 
         if (!empty($excludeDates)) {
             $query->whereNotIn('tanggal', $excludeDates);

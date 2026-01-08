@@ -23,19 +23,12 @@ final class AbsensiController extends Controller
     {
         $toPlainArray = static fn($r) => is_array($r) ? $r : (method_exists($r, 'toArray') ? $r->toArray() : (array) $r);
 
+
         $sdmOptions = $this->service->sdmOptions()->map($toPlainArray)->all();
         $jadwalOptions = $this->service->jadwalOptions()->map($toPlainArray)->all();
         $jenisAbsenOptions = $this->service->jenisAbsenOptions()->map($toPlainArray)->all();
-        $tarifLemburOptions = $this->service->tarifLemburOptions()->map($toPlainArray)->all();
-        $holidayDates = $this->service->getHolidayDates()->all();
 
-        return view('admin.absensi.index', compact(
-            'sdmOptions', 
-            'jadwalOptions', 
-            'jenisAbsenOptions',
-            'tarifLemburOptions',
-            'holidayDates'
-        ));
+        return view('admin.absensi.index', compact('sdmOptions', 'jadwalOptions', 'jenisAbsenOptions'));
     }
 
     public function list(Request $request): JsonResponse
@@ -132,16 +125,28 @@ final class AbsensiController extends Controller
     }
 
     /**
-     * Check if a date is a holiday (AJAX endpoint)
+     * Resolve jadwal master (id_jadwal) untuk SDM pada tanggal tertentu.
+     * Digunakan frontend agar dropdown jadwal otomatis terisi sesuai tabel assignment sdm_jadwal_karyawan.
      */
-    public function checkHoliday(Request $request): JsonResponse
+    public function resolveJadwal(Request $request): JsonResponse
     {
-        $tanggal = $request->get('tanggal');
-        if (!$tanggal) {
-            return $this->response->errorResponse('Tanggal diperlukan', 400);
+        $idSdm = (int) ($request->get('id_sdm') ?? 0);
+        $tanggal = (string) ($request->get('tanggal') ?? '');
+
+        if (!$idSdm || !$tanggal) {
+            return $this->response->errorResponse('Parameter id_sdm dan tanggal wajib diisi', 422);
         }
 
-        $info = $this->service->getHolidayInfo($tanggal);
-        return $this->response->successResponse('OK', $info);
+        $idJadwal = $this->service->resolveJadwalForSdm($idSdm, $tanggal);
+        if (!$idJadwal) {
+            return $this->response->successResponse('Jadwal belum ditugaskan untuk SDM pada tanggal tersebut', [
+                'id_jadwal_karyawan' => null,
+            ]);
+        }
+
+        // NOTE: kita kirim key id_jadwal_karyawan supaya frontend tetap kompatibel
+        return $this->response->successResponse('OK', [
+            'id_jadwal_karyawan' => $idJadwal,
+        ]);
     }
 }

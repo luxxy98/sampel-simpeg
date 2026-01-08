@@ -19,11 +19,31 @@
             </a>
 
 
-            {{-- ABSENSI --}}
-<a class="menu-link {{ request()->routeIs('admin.absensi.*') ? 'active' : '' }}"
-   href="{{ route('admin.absensi.index') }}">
-    <span class="menu-title">Absensi</span>
-</a>
+            @php $absensiActive = request()->routeIs('admin.absensi.*'); @endphp
+            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $absensiActive ? 'here show' : '' }}">
+                <span class="menu-link">
+                    <span class="menu-title">Presensi</span>
+                    <span class="menu-arrow"></span>
+                </span>
+                <div class="menu-sub menu-sub-accordion menu-active-bg">
+                    <a class="menu-link {{ request()->routeIs('admin.absensi.index') || request()->routeIs('admin.absensi.list') || request()->routeIs('admin.absensi.show') ? 'active' : '' }}"
+                       href="{{ route('admin.absensi.index') }}">
+                        <span class="menu-title px-4">Absensi</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.absensi.jenis.*') ? 'active' : '' }}"
+                       href="{{ route('admin.absensi.jenis.index') }}">
+                        <span class="menu-title px-4">Jenis Absen</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.absensi.jadwal-kerja.*') ? 'active' : '' }}"
+                       href="{{ route('admin.absensi.jadwal-kerja.index') }}">
+                        <span class="menu-title px-4">Jadwal Kerja</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.absensi.jadwal-karyawan.*') ? 'active' : '' }}"
+                       href="{{ route('admin.absensi.jadwal-karyawan.index') }}">
+                        <span class="menu-title px-4">Jadwal Karyawan</span>
+                    </a>
+                </div>
+            </div>
 
 @php $gajiActive = request()->routeIs('admin.gaji.*'); @endphp
 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $gajiActive ? 'here show' : '' }}">
@@ -48,10 +68,6 @@
             href="{{ route('admin.gaji.distribusi.index') }}">
             <span class="menu-title px-4">Distribusi Transfer</span>
         </a>
-        <a class="menu-link {{ request()->routeIs('admin.gaji.tarif-lembur.*') ? 'active' : '' }}"
-            href="{{ route('admin.gaji.tarif-lembur.index') }}">
-            <span class="menu-title px-4">Tarif Lembur</span>
-        </a>
     </div>
 </div>
 
@@ -61,8 +77,9 @@
                     request()->routeIs('admin.ref.jenjang-pendidikan.*') ||
                     request()->routeIs('admin.ref.hubungan-keluarga.*') ||
                     request()->routeIs('admin.ref.jenis-asuransi.*') ||
-                    request()->routeIs('admin.ref.eselon.*') ||
-                    request()->routeIs('admin.referensi.hari-libur.*');
+                    request()->routeIs('admin.ref.eselon.*');
+                    request()->routeIs('admin.ref.libur-nasional.*') ||
+                    request()->routeIs('admin.ref.libur-pt.*');
             @endphp
             <div data-kt-menu-trigger="click"
                 class="menu-item menu-accordion {{ $referensiActive ? 'here show' : '' }}">
@@ -87,9 +104,13 @@
                         href="{{ route('admin.ref.eselon.index') }}">
                         <span class="menu-title px-4">Eselon</span>
                     </a>
-                    <a class="menu-link {{ request()->routeIs('admin.referensi.hari-libur.*') ? 'active' : '' }}"
-                        href="{{ route('admin.referensi.hari-libur.index') }}">
-                        <span class="menu-title px-4">Hari Libur</span>
+                    <a class="menu-link {{ request()->routeIs('admin.ref.libur-nasional.*') ? 'active' : '' }}"
+                        href="{{ route('admin.ref.libur-nasional.index') }}">
+                        <span class="menu-title px-4">Libur Nasional</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.ref.libur-pt.*') ? 'active' : '' }}"
+                        href="{{ route('admin.ref.libur-pt.index') }}">
+                        <span class="menu-title px-4">Libur PT</span>
                     </a>
                 </div>
             </div>

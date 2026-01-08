@@ -165,6 +165,22 @@ final class AbsensiRequest extends FormRequest
                 $header->copy()->addDay()->toDateString(), // shift malam boleh nyebrang H+1
             ];
 
+            // Jika tanggal absensi adalah hari libur (Minggu / libur nasional / libur PT),
+            // maka input jenis ALPHA/CUTI tidak masuk akal (karena tidak ada potongan di hari libur).
+            // Ini mencegah data yang membingungkan dan menjaga alur payroll.
+            $isHoliday = $this->isHolidayDate($header->toDateString());
+            $jenisNameMap = [];
+            if ($isHoliday) {
+                $ids = array_values(array_unique(array_filter((array) data_get($this->input('detail', []), 'id_jenis_absen', []))));
+                if (!empty($ids)) {
+                    $jenisNameMap = DB::connection('mysql')->table('absen_jenis')
+                        ->whereIn('id_jenis_absen', $ids)
+                        ->pluck('nama_absen', 'id_jenis_absen')
+                        ->map(fn($v) => strtoupper(trim((string) $v)))
+                        ->toArray();
+                }
+            }
+
             $detail = $this->input('detail', []);
             if (!is_array($detail)) {
                 $validator->errors()->add('detail', 'Detail absensi harus berupa array.');
@@ -199,6 +215,15 @@ final class AbsensiRequest extends FormRequest
                 if (empty($idJenis)) {
                     $validator->errors()->add("detail.id_jenis_absen.$i", 'Jenis absen wajib dipilih.');
                     continue;
+                }
+
+                // Validasi: hari libur tidak boleh diisi ALPHA/CUTI
+                if ($isHoliday) {
+                    $nama = $jenisNameMap[(int) $idJenis] ?? null;
+                    if (in_array($nama, ['ALPHA', 'CUTI'], true)) {
+                        $validator->errors()->add("detail.id_jenis_absen.$i", 'Tanggal ini adalah hari libur, jadi tidak boleh memilih jenis ALPHA/CUTI.');
+                        continue;
+                    }
                 }
                 if (empty($mulai)) {
                     $validator->errors()->add("detail.waktu_mulai.$i", 'Waktu mulai wajib diisi.');
@@ -309,6 +334,31 @@ final class AbsensiRequest extends FormRequest
                 }
             }
         });
+    }
+
+    /**
+     * Hari libur = Minggu atau tanggal yang terdaftar di ref_libur_nasional / ref_libur_pt.
+     */
+    private function isHolidayDate(string $date): bool
+    {
+        // Minggu
+        if ((int) date('w', strtotime($date)) === 0) {
+            return true;
+        }
+
+        $existsNasional = DB::connection('mysql')
+            ->table('ref_libur_nasional')
+            ->whereDate('tanggal', $date)
+            ->exists();
+
+        if ($existsNasional) {
+            return true;
+        }
+
+        return DB::connection('mysql')
+            ->table('ref_libur_pt')
+            ->whereDate('tanggal', $date)
+            ->exists();
     }
 
     protected function failedValidation(ContractValidator $validator): void

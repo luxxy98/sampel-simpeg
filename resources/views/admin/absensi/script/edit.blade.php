@@ -2,12 +2,6 @@
     // Data jadwal dengan jam_masuk dan jam_pulang (shared with create)
     const jadwalDataEdit = @json($jadwalOptions ?? []);
     
-    // Data tarif lembur
-    const tarifLemburDataEdit = @json($tarifLemburOptions ?? []);
-    
-    // Data hari libur
-    const holidayDatesEdit = @json($holidayDates ?? []);
-    
     // ID jenis absen HADIR (untuk filter perhitungan)
     const HADIR_IDS_EDIT = [
         @foreach($jenisAbsenOptions ?? [] as $j)
@@ -16,9 +10,6 @@
             @endif
         @endforeach
     ];
-
-    // URL untuk check holiday via AJAX
-    const CHECK_HOLIDAY_URL_EDIT = '{{ route("admin.absensi.check-holiday") }}';
 
     function getJadwalByIdEdit(id) {
         return jadwalDataEdit.find(j => j.id_jadwal_karyawan == id);
@@ -38,65 +29,6 @@
         }
         return null;
     }
-    
-    function formatRupiahEdit(amount) {
-        return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
-    }
-
-    function checkHolidayEdit(tanggal) {
-        if (!tanggal) {
-            updateHolidayUIEdit(false, null, null);
-            return;
-        }
-        
-        $.get(CHECK_HOLIDAY_URL_EDIT, { tanggal: tanggal }, function(response) {
-            if (response.success && response.data) {
-                updateHolidayUIEdit(
-                    response.data.is_hari_libur,
-                    response.data.holiday_name,
-                    response.data
-                );
-            }
-        }).fail(function() {
-            updateHolidayUIEdit(false, null, {
-                id_tarif_lembur: tarifLemburDataEdit[0]?.id_tarif || null,
-                nama_tarif: tarifLemburDataEdit[0]?.nama_tarif || '-',
-                tarif_per_jam: tarifLemburDataEdit[0]?.tarif_per_jam || 0
-            });
-        });
-    }
-    
-    function updateHolidayUIEdit(isHoliday, holidayName, tarifData) {
-        // Update holiday badge
-        if (isHoliday) {
-            $('#edit_holiday_badge').show();
-            $('#edit_holiday_name').text(holidayName || 'Hari Libur');
-        } else {
-            $('#edit_holiday_badge').hide();
-        }
-        
-        // Update hidden fields
-        $('#edit_is_hari_libur').val(isHoliday ? 1 : 0);
-        
-        if (tarifData) {
-            $('#edit_id_tarif_lembur').val(tarifData.id_tarif_lembur || '');
-            $('#edit_tarif_lembur_info').val(tarifData.nama_tarif || '-');
-            $('#edit_tarif_per_jam').val(tarifData.tarif_per_jam || 0);
-            $('#edit_tarif_per_jam_display').val(formatRupiahEdit(tarifData.tarif_per_jam || 0));
-        }
-        
-        // Recalculate nominal lembur
-        calculateNominalLemburEdit();
-    }
-    
-    function calculateNominalLemburEdit() {
-        const totalLembur = parseFloat($('#edit_total_lembur').val()) || 0;
-        const tarifPerJam = parseFloat($('#edit_tarif_per_jam').val()) || 0;
-        const nominal = totalLembur * tarifPerJam;
-        
-        $('#edit_nominal_lembur').val(nominal);
-        $('#edit_nominal_lembur_display').val(formatRupiahEdit(nominal));
-    }
 
     function recalculateTotalsEdit() {
         const jadwalId = $('#edit_id_jadwal_karyawan').val();
@@ -106,8 +38,6 @@
             $('#edit_total_jam_kerja').val('0.00');
             $('#edit_total_terlambat').val('0.00');
             $('#edit_total_pulang_awal').val('0.00');
-            $('#edit_total_lembur').val('0.00');
-            calculateNominalLemburEdit();
             return;
         }
 
@@ -117,7 +47,6 @@
         let totalJamKerja = 0;
         let totalTerlambat = 0;
         let totalPulangAwal = 0;
-        let totalLembur = 0;
 
         $('#table_detail_edit tbody tr').each(function() {
             const $row = $(this);
@@ -136,20 +65,10 @@
                     totalTerlambat += (jamDatangMenit - jamMasukMenit) / 60;
                 }
 
-                // Hitung pulang awal dan lembur
-                let jamPulangAktualMenit = extractTimeFromDatetimeEdit(waktuSelesai);
-                
-                // Handle waktu setelah tengah malam (misal 01:00 = 25 jam dalam konteks shift malam)
-                if (jamPulangAktualMenit !== null && jamPulangAktualMenit < 7 * 60) {
-                    jamPulangAktualMenit += 24 * 60;
-                }
-                
-                if (jamPulangAktualMenit !== null) {
-                    if (jamPulangAktualMenit < jamPulangMenit) {
-                        totalPulangAwal += (jamPulangMenit - jamPulangAktualMenit) / 60;
-                    } else if (jamPulangAktualMenit > jamPulangMenit) {
-                        totalLembur += (jamPulangAktualMenit - jamPulangMenit) / 60;
-                    }
+                // Hitung pulang awal (jam pulang < jam pulang jadwal)
+                const jamPulangAktualMenit = extractTimeFromDatetimeEdit(waktuSelesai);
+                if (jamPulangAktualMenit !== null && jamPulangAktualMenit < jamPulangMenit) {
+                    totalPulangAwal += (jamPulangMenit - jamPulangAktualMenit) / 60;
                 }
             }
         });
@@ -157,10 +76,23 @@
         $('#edit_total_jam_kerja').val(totalJamKerja.toFixed(2));
         $('#edit_total_terlambat').val(totalTerlambat.toFixed(2));
         $('#edit_total_pulang_awal').val(totalPulangAwal.toFixed(2));
-        $('#edit_total_lembur').val(totalLembur.toFixed(2));
-        
-        // Calculate nominal lembur after updating total lembur
-        calculateNominalLemburEdit();
+    }
+
+    // Auto-resolve jadwal edit berdasarkan tabel assignment sdm_jadwal_karyawan
+    const resolveJadwalUrlEdit = '{{ route('admin.absensi.resolve-jadwal') }}';
+    async function resolveJadwalEdit() {
+        const idSdm = $('#edit_id_sdm').val();
+        const tgl = $('#edit_tanggal').val();
+        if (!idSdm || !tgl) return;
+
+        try {
+            const res = await DataManager.readData(resolveJadwalUrlEdit, { id_sdm: idSdm, tanggal: tgl });
+            if (res && res.success && res.data && res.data.id_jadwal_karyawan) {
+                $('#edit_id_jadwal_karyawan').val(res.data.id_jadwal_karyawan).trigger('change');
+            }
+        } catch (e) {
+            console.log('resolve jadwal gagal', e);
+        }
     }
 
     async function openEditAbsensi(id_absensi) {
@@ -189,30 +121,13 @@
         $('#edit_id_sdm').val(abs.id_sdm).trigger('change');
         $('#edit_id_jadwal_karyawan').val(abs.id_jadwal_karyawan).trigger('change');
 
+        // kalau user ganti SDM/tanggal di modal edit, jadwal otomatis mengikuti assignment
+        $('#edit_id_sdm').off('change.resolve').on('change.resolve', resolveJadwalEdit);
+        $('#edit_tanggal').off('change.resolve').on('change.resolve', resolveJadwalEdit);
+
         $('#edit_total_jam_kerja').val(abs.total_jam_kerja);
         $('#edit_total_terlambat').val(abs.total_terlambat);
         $('#edit_total_pulang_awal').val(abs.total_pulang_awal);
-        $('#edit_total_lembur').val(abs.total_lembur || '0.00');
-        
-        // Set holiday fields
-        $('#edit_is_hari_libur').val(abs.is_hari_libur ? 1 : 0);
-        $('#edit_id_tarif_lembur').val(abs.id_tarif_lembur || '');
-        $('#edit_tarif_lembur_info').val(abs.tarif_lembur_nama || '-');
-        $('#edit_tarif_per_jam').val(abs.tarif_per_jam || 0);
-        $('#edit_tarif_per_jam_display').val(formatRupiahEdit(abs.tarif_per_jam || 0));
-        $('#edit_nominal_lembur').val(abs.nominal_lembur || 0);
-        $('#edit_nominal_lembur_display').val(formatRupiahEdit(abs.nominal_lembur || 0));
-        
-        // Always check holiday status and refresh tarif lembur from server
-        // This ensures the latest tarif data is loaded
-        checkHolidayEdit(abs.tanggal);
-        
-        // Show holiday badge if applicable
-        if (abs.is_hari_libur) {
-            $('#edit_holiday_badge').show();
-        } else {
-            $('#edit_holiday_badge').hide();
-        }
 
         const $tbody = $('#table_detail_edit tbody');
         $tbody.html('');
@@ -288,6 +203,7 @@
             const action = '{{ route('admin.absensi.update', ['id' => '___ID___']) }}'.replace('___ID___', id);
             const form = document.getElementById('bt_submit_edit_absensi');
             const formData = new FormData(form);
+            formData.append('_method', 'PUT');
 
             DataManager.formData(action, formData).then(response => {
                 if (response.success) {
@@ -306,15 +222,11 @@
     });
 
     $('#form_edit').on('shown.bs.modal', function () {
-        $('#edit_tanggal').flatpickr({ 
-            dateFormat: 'Y-m-d', 
-            altInput: true, 
-            altFormat: 'd/m/Y',
-            onChange: function(selectedDates, dateStr) {
-                checkHolidayEdit(dateStr);
-            }
-        });
+        $('#edit_tanggal').flatpickr({ dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
         $('#edit_id_sdm, #edit_id_jadwal_karyawan').select2({ dropdownParent: $('#form_edit') });
+
+        $('#edit_id_sdm').off('change.resolve').on('change.resolve', resolveJadwalEdit);
+        $('#edit_tanggal').off('change.resolve').on('change.resolve', resolveJadwalEdit);
 
         // Recalculate when jadwal changes
         $('#edit_id_jadwal_karyawan').off('change.calc').on('change.calc', function() {
@@ -354,4 +266,3 @@
         });
     });
 </script>
-
