@@ -1,6 +1,6 @@
 <script defer>
     // Data jadwal dengan jam_masuk dan jam_pulang
-    const jadwalData = @json($jadwalOptions ?? []);
+    let jadwalData = @json($jadwalOptions ?? []);
     
     // ID jenis absen HADIR (untuk filter perhitungan)
     const HADIR_IDS = [
@@ -130,6 +130,84 @@
 
         // init select2
         $('#id_sdm, #id_jadwal_karyawan').select2({ dropdownParent: $('#form_create') });
+
+        function fillJadwalSelect(options) {
+    const $sel = $('#id_jadwal_karyawan');
+
+    // replace options
+    $sel.empty().append(new Option('', '', true, false));
+
+    (options || []).forEach(o => {
+        const text = `${o.nama_jadwal} (${o.jam_masuk} - ${o.jam_pulang}) | ${o.tanggal_mulai} s/d ${o.tanggal_selesai}`;
+        $sel.append(new Option(text, o.id_jadwal_karyawan, false, false));
+    });
+
+    // update data untuk perhitungan total (terlambat/pulang awal)
+    jadwalData = options || [];
+
+    // auto pilih kalau cuma 1
+    if ((options || []).length === 1) {
+        $sel.val(String(options[0].id_jadwal_karyawan)).trigger('change');
+    } else {
+        $sel.val(null).trigger('change');
+    }
+
+    recalculateTotals();
+}
+
+function loadJadwalKaryawanBySdmTanggal() {
+    const idSdm = $('#id_sdm').val();
+    const tanggal = $('#tanggal').val(); // flatpickr menyimpan YYYY-MM-DD di input ini
+
+    if (!idSdm || !tanggal) {
+        fillJadwalSelect([]);
+        return;
+    }
+
+    $.ajax({
+        url: "{{ route('admin.absensi.jadwal-karyawan.options') }}",
+        method: "GET",
+        data: { id_sdm: idSdm, tanggal: tanggal },
+        success: function (res) {
+            const options = res?.data?.options || [];
+            fillJadwalSelect(options);
+
+            if (options.length === 0) {
+                Swal.fire(
+                    'Warning',
+                    `Jadwal karyawan untuk SDM ini pada tanggal ${tanggal} belum diset. Silakan set di menu Jadwal Karyawan.`,
+                    'warning'
+                );
+            }
+        },
+        error: function (xhr) {
+            console.error(xhr);
+            fillJadwalSelect([]);
+            Swal.fire('Error', 'Gagal mengambil jadwal karyawan. Cek console/log.', 'error');
+        }
+    });
+}
+
+// trigger saat SDM berubah
+$('#id_sdm').off('change.loadJadwal').on('change.loadJadwal', function () {
+    loadJadwalKaryawanBySdmTanggal();
+});
+
+// trigger saat tanggal berubah (flatpickr)
+const fp = $('#tanggal').data('flatpickr');
+if (fp) {
+    fp.set('onChange', function () {
+        loadJadwalKaryawanBySdmTanggal();
+    });
+} else {
+    $('#tanggal').off('change.loadJadwal').on('change.loadJadwal', function () {
+        loadJadwalKaryawanBySdmTanggal();
+    });
+}
+
+// saat modal dibuka, kalau SDM & tanggal sudah terisi → langsung load
+loadJadwalKaryawanBySdmTanggal();
+
 
         // Auto-resolve jadwal berdasarkan tabel assignment sdm_jadwal_karyawan
         const resolveJadwalUrl = '{{ route('admin.absensi.resolve-jadwal') }}';

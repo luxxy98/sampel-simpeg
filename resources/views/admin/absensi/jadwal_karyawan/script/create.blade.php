@@ -1,82 +1,86 @@
 <script defer>
-    function _renderSdmOptions($select) {
-        $select.empty();
-        $select.append(new Option('- Pilih SDM -', '', true, false));
-        (sdmOptions || []).forEach((o) => {
-            const opt = new Option(o.nama, o.id_sdm, false, false);
-            $select.append(opt);
-        });
-        $select.val('').trigger('change');
-    }
+    // submit AJAX (biar tidak pindah ke /store)
+    $(document).on('submit', '#bt_submit_create_jadwal_karyawan', function (e) {
+        e.preventDefault();
 
-    function _renderJadwalOptions($select) {
-        $select.empty();
-        $select.append(new Option('- Pilih Jadwal -', '', true, false));
-        (jadwalOptions || []).forEach((o) => {
-            const label = `${o.nama} (${o.jam_masuk} - ${o.jam_pulang})`;
-            const val = o.id_jadwal_karyawan; // alias dari id_jadwal
-            const opt = new Option(label, val, false, false);
-            $select.append(opt);
-        });
-        $select.val('').trigger('change');
-    }
+        const $form = $(this);
 
-    $('#form_create').on('show.bs.modal', function () {
-        const $sdm = $('#id_sdm');
-        const $jadwal = $('#id_jadwal');
+        const payload = {
+            id_sdm: $form.find('[name="id_sdm"]').val(),
+            id_jadwal: $form.find('[name="id_jadwal"]').val(),
+            tanggal_mulai: $form.find('[name="tanggal_mulai"]').val(),
+            tanggal_selesai: $form.find('[name="tanggal_selesai"]').val(),
+        };
 
-        _renderSdmOptions($sdm);
-        _renderJadwalOptions($jadwal);
+        Swal.fire({
+            title: 'Simpan data?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Simpan',
+            cancelButtonText: 'Batal',
+            allowOutsideClick: false
+        }).then((r) => {
+            if (!r.value) return;
 
-        $sdm.select2({ dropdownParent: $('#form_create') });
-        $jadwal.select2({ dropdownParent: $('#form_create') });
-
-        $('#bt_submit_create_jadwal_karyawan').off('submit').on('submit', function (e) {
-            e.preventDefault();
-
-            Swal.fire({
-                title: 'Simpan data?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Simpan',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((r) => {
-                if (!r.value) return;
-
+            // pakai DataManager bila ada
+            if (typeof DataManager !== 'undefined' && typeof DataManager.postData === 'function') {
                 DataManager.openLoading();
 
-                const input = {
-                    id_sdm: $sdm.val(),
-                    id_jadwal: $jadwal.val(),
-                    tanggal_mulai: $('#tanggal_mulai').val(),
-                    tanggal_selesai: $('#tanggal_selesai').val(),
-                };
-
-                DataManager.postData('{{ route('admin.absensi.jadwal-karyawan.store') }}', input)
+                DataManager.postData("{{ route('admin.absensi.jadwal-karyawan.store') }}", payload)
                     .then(res => {
-                        if (res.success) {
-                            Swal.fire('Success', res.message, 'success');
-                            setTimeout(() => location.reload(), 800);
+                        Swal.close();
+
+                        if (res?.success) {
+                            Swal.fire('Success', res.message || 'Berhasil disimpan', 'success');
+                            $('#form_create').modal('hide');
+
+                            // reload datatable (pastikan variabel table global)
+                            if (window.jadwalKaryawanTable) {
+                                window.jadwalKaryawanTable.ajax.reload(null, false);
+                            }
                             return;
                         }
-                        if (!res.success && res.errors) {
-                            const v = new ValidationErrorFilter();
-                            v.filterValidationErrors(res);
-                            const firstError = Object.values(res.errors).flat()[0];
-                            Swal.fire('Warning', firstError || 'Validasi bermasalah', 'warning');
+
+                        if (res?.errors) {
+                            const first = Object.values(res.errors).flat()[0];
+                            Swal.fire('Warning', first || 'Validasi gagal', 'warning');
                             return;
                         }
-                        Swal.fire('Peringatan', res.message || 'Gagal simpan', 'warning');
+
+                        Swal.fire('Warning', res?.message || 'Gagal simpan', 'warning');
                     })
-                    .catch(err => ErrorHandler.handleError(err));
+                    .catch(err => {
+                        Swal.close();
+                        if (typeof ErrorHandler !== 'undefined') return ErrorHandler.handleError(err);
+                        console.error(err);
+                        Swal.fire('Error', 'Terjadi error, cek console/log.', 'error');
+                    });
+
+                return;
+            }
+
+            // fallback ajax biasa
+            $.ajax({
+                url: "{{ route('admin.absensi.jadwal-karyawan.store') }}",
+                method: "POST",
+                data: payload,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="X-CSRF-TOKEN"]')?.getAttribute('content')
+                },
+                success: function (res) {
+                    if (res?.success) {
+                        Swal.fire('Success', res.message || 'Berhasil disimpan', 'success');
+                        $('#form_create').modal('hide');
+                        window.jadwalKaryawanTable?.ajax?.reload(null, false);
+                    } else {
+                        Swal.fire('Warning', res?.message || 'Gagal simpan', 'warning');
+                    }
+                },
+                error: function (xhr) {
+                    console.error(xhr);
+                    Swal.fire('Error', xhr.responseJSON?.message || xhr.statusText, 'error');
+                }
             });
         });
-    }).on('hidden.bs.modal', function () {
-        const $m = $(this);
-        $m.find('form').trigger('reset');
-        $m.find('select').val('').trigger('change');
-        $m.find('.invalid-feedback, .text-danger').remove();
-        $m.find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
     });
 </script>

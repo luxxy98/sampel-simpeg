@@ -280,6 +280,7 @@ Route::prefix('ref')->group(function () {
     Route::post('store', [AbsensiController::class, 'store'])->name('absensi.store');
     Route::post('update/{id}', [AbsensiController::class, 'update'])->name('absensi.update');
     Route::post('destroy/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+    Route::get('jadwal-karyawan/options', [AbsensiController::class, 'jadwalKaryawanOptions'])->name('absensi.jadwal-karyawan.options');
 
     Route::prefix('jenis')->group(function () {
         Route::get('/', [AbsenJenisController::class, 'index'])->name('absensi.jenis.index');

@@ -11,6 +11,8 @@ use App\Services\Tools\TransactionService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\DB;
 
 final class JadwalKaryawanController extends Controller
 {
@@ -23,46 +25,80 @@ final class JadwalKaryawanController extends Controller
 
     public function index(): View
     {
-        $toPlainArray = static fn($r) => is_array($r) ? $r : (method_exists($r, 'toArray') ? $r->toArray() : (array) $r);
+        // SDM: ambil nama dari tabel person
+    $sdmOptions = DB::connection('mysql')->table('person_sdm as ps')
+        ->leftJoin('person as p', 'p.id_person', '=', 'ps.id_person')
+        ->select([
+            'ps.id_sdm',
+            DB::raw('COALESCE(p.nama, ps.id_sdm) as nama') // fallback aman
+        ])
+        ->orderBy('nama')
+        ->get()
+        ->map(fn($r) => [
+            'id_sdm' => (int) $r->id_sdm,
+            'nama'   => (string) $r->nama,
+        ])
+        ->toArray();
 
-        $sdmOptions = $this->absensiService->sdmOptions()->map($toPlainArray)->all();
-        $jadwalOptions = $this->absensiService->jadwalOptions()->map($toPlainArray)->all();
+    // Master Jadwal Kerja
+    $jadwalKerjaOptions = DB::connection('mysql')->table('master_jadwal_kerja')
+        ->select(['id_jadwal', 'nama_jadwal', 'jam_masuk', 'jam_pulang'])
+        ->orderBy('nama_jadwal')
+        ->get()
+        ->map(fn($r) => [
+            'id_jadwal'   => (int) $r->id_jadwal,
+            'nama_jadwal' => (string) $r->nama_jadwal,
+            'jam_masuk'   => (string) $r->jam_masuk,
+            'jam_pulang'  => (string) $r->jam_pulang,
+        ])
+        ->toArray();
 
-        return view('admin.absensi.jadwal_karyawan.index', compact('sdmOptions', 'jadwalOptions'));
+    return view('admin.absensi.jadwal_karyawan.index', compact('sdmOptions', 'jadwalKerjaOptions'));
     }
 
-    public function list(Request $request): JsonResponse
-    {
-        return $this->transaction->handleWithDataTable(
-            fn () => $this->service->getListQuery(),
-            [
-                'action' => function ($row) {
-                    $payload = htmlspecialchars(json_encode([
-                        'id_jadwal_karyawan' => (int) $row->id_jadwal_karyawan,
-                        'id_sdm' => (int) $row->id_sdm,
-                        'id_jadwal' => (int) $row->id_jadwal,
-                        'tanggal_mulai' => (string) $row->tanggal_mulai,
-                        'tanggal_selesai' => (string) $row->tanggal_selesai,
-                        'dibuat_oleh' => $row->dibuat_oleh,
-                    ]), ENT_QUOTES, 'UTF-8');
+    public function list(Request $request)
+{
+    return $this->transaction->handleWithDataTable(
+        fn () => $this->service->getListQuery(),
+        [
+            // kolom datatable: sdm
+            'sdm' => fn ($r) => e($r->nama_sdm),
 
-                    $btnEdit = "<button type='button'
-                        class='btn btn-icon btn-bg-light btn-active-text-primary btn-sm m-1'
-                        title='Edit' onclick='openEditJadwalKaryawan({$payload})'>
-                        <span class='bi bi-pencil'></span>
-                    </button>";
+            // kolom datatable: jadwal
+            'jadwal' => function ($r) {
+                $range = trim(($r->jam_masuk ?? '-') . ' - ' . ($r->jam_pulang ?? '-'));
+                return e($r->nama_jadwal) . ' (' . e($range) . ')';
+            },
 
-                    $btnDel = "<button type='button'
-                        class='btn btn-icon btn-bg-light btn-active-text-primary btn-sm m-1'
-                        title='Hapus' onclick='deleteJadwalKaryawan(\"{$row->id_jadwal_karyawan}\")'>
-                        <span class='bi bi-trash'></span>
-                    </button>";
+            // kolom datatable: action
+            'action' => function ($r) {
+                $payload = htmlspecialchars(json_encode([
+                    'id_jadwal_karyawan' => (int) $r->id_jadwal_karyawan,
+                    'id_sdm' => (int) $r->id_sdm,
+                    'id_jadwal' => (int) $r->id_jadwal,
+                    'tanggal_mulai' => (string) $r->tanggal_mulai,
+                    'tanggal_selesai' => (string) $r->tanggal_selesai,
+                ]), ENT_QUOTES, 'UTF-8');
 
-                    return $btnEdit . ' ' . $btnDel;
-                },
-            ]
-        );
-    }
+                $id = (int) $r->id_jadwal_karyawan;
+
+                return "
+                    <div class='d-flex gap-1 ps-3'>
+                        <button type='button' class='btn btn-icon btn-bg-light btn-active-text-primary btn-sm'
+                            title='Edit' onclick='openEditJadwalKaryawan({$payload})'>
+                            <i class='bi bi-pencil fs-4'></i>
+                        </button>
+                        <button type='button' class='btn btn-icon btn-bg-light btn-active-text-danger btn-sm'
+                            title='Hapus' onclick='deleteJadwalKaryawan({$id})'>
+                            <i class='bi bi-trash fs-4'></i>
+                        </button>
+                    </div>
+                ";
+            },
+        ]
+    );
+}
+
 
     public function show(string $id): JsonResponse
     {

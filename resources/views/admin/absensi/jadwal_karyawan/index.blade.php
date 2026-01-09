@@ -51,7 +51,7 @@
     @include('admin.absensi.jadwal_karyawan.view.edit')
 @endsection
 
-@section('script')
+@section('javascript')
     <script src="{{ asset('assets/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/datatables/dataTables.bootstrap5.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/datatables/dataTables.responsive.min.js') }}"></script>
@@ -59,9 +59,9 @@
     <script src="{{ asset('assets/plugins/datatables/buttons/buttons.html5.min.js') }}"></script>
 
     <script>
-        // Options dari controller
-        const sdmOptions = @json($sdmOptions ?? []);
-        const jadwalOptions = @json($jadwalOptions ?? []);
+        // Jadikan global supaya aman dipakai di file script lain
+        window.sdmOptions = @json($sdmOptions ?? []);
+        window.jadwalOptions = @json($jadwalKerjaOptions ?? []);
     </script>
 
     @include('admin.absensi.jadwal_karyawan.script.list')
@@ -69,3 +69,4 @@
     @include('admin.absensi.jadwal_karyawan.script.edit')
     @include('admin.absensi.jadwal_karyawan.script.delete')
 @endsection
+

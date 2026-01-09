@@ -1,17 +1,22 @@
 <script defer>
-    const tableJadwalKerja = $('#table_jadwal_kerja').DataTable({
-        dom: 'lBfrtip',
-        stateSave: true,
-        stateDuration: -1,
-        pageLength: 10,
-        buttons: [
-            { extend: 'csv', action: newexportaction, className: 'btn btn-sm btn-dark rounded-2' },
-            { extend: 'excel', action: newexportaction, className: 'btn btn-sm btn-dark rounded-2' }
-        ],
+    // Pastikan table tidak dobel-initialize
+    if (window.tableJadwalKerja && $.fn.DataTable.isDataTable('#table_jadwal_kerja')) {
+        window.tableJadwalKerja.destroy();
+        $('#table_jadwal_kerja tbody').empty();
+    }
+
+    window.tableJadwalKerja = $('#table_jadwal_kerja').DataTable({
         processing: true,
         serverSide: true,
         responsive: true,
-        ajax: { url: '{{ route('admin.absensi.jadwal-kerja.list') }}', cache: false },
+        stateSave: true,
+        stateDuration: -1,
+        pageLength: 10,
+        ajax: {
+            url: '{{ route('admin.absensi.jadwal-kerja.list') }}',
+            type: 'GET',
+            cache: false
+        },
         columns: [
             { data: 'action', orderable: false, searchable: false },
             { data: 'nama_jadwal', name: 'nama_jadwal' },

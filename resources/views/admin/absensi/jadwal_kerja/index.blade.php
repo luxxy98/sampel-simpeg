@@ -51,7 +51,7 @@
     @include('admin.absensi.jadwal_kerja.view.edit')
 @endsection
 
-@section('script')
+@section('javascript')
     <script src="{{ asset('assets/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/datatables/dataTables.bootstrap5.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/datatables/dataTables.responsive.min.js') }}"></script>

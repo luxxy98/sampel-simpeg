@@ -334,6 +334,29 @@ final class AbsensiService
         }
     }
 
+    public function jadwalKaryawanOptionsForDate(int $idSdm, string $tanggal): array
+{
+    return DB::connection('mysql')
+        ->table('sdm_jadwal_karyawan as sjk')
+        ->join('master_jadwal_kerja as mjk', 'mjk.id_jadwal', '=', 'sjk.id_jadwal')
+        ->where('sjk.id_sdm', $idSdm)
+        ->whereDate('sjk.tanggal_mulai', '<=', $tanggal)
+        ->whereDate('sjk.tanggal_selesai', '>=', $tanggal)
+        ->orderByDesc('sjk.tanggal_mulai')
+        ->get([
+            'sjk.id_jadwal_karyawan',
+            'sjk.id_jadwal',
+            'sjk.tanggal_mulai',
+            'sjk.tanggal_selesai',
+            'mjk.nama_jadwal',
+            'mjk.jam_masuk',
+            'mjk.jam_pulang',
+        ])
+        ->map(fn($r) => (array) $r)
+        ->all();
+}
+
+
     private function getSdmName(int $idSdm): ?string
     {
         $row = DB::table('person_sdm as ps')
@@ -358,5 +381,6 @@ final class AbsensiService
             return null;
         }
     }
+    
 }
 

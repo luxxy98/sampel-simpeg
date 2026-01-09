@@ -1,53 +1,88 @@
-@extends('admin.layouts.index')
+<script defer>
+    function normalizeTimeToSeconds(value) {
+        if (!value) return value;
+        return value.length === 5 ? (value + ':00') : value; // HH:MM -> HH:MM:SS
+    }
 
-@section('css')
-    <link rel="stylesheet" href="{{ asset('assets/plugins/datatables/dataTables.bootstrap5.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/plugins/datatables/responsive.bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/plugins/datatables/buttons.dataTables.min.css') }}">
-@endsection
+    // delegated binding: tidak peduli modal dibuka kapan, tetap nempel
+    $(document).on('submit', '#bt_submit_create_jadwal', function (e) {
+        e.preventDefault();
 
-@section('list')
-    <li class="breadcrumb-item text-muted">Absensi</li>
-    <li class="breadcrumb-item">
-        <span class="bullet bg-gray-400 w-5px h-2px"></span>
-    </li>
-    <li class="breadcrumb-item text-muted">Jadwal Karyawan</li>
-@endsection
+        const $form = $(this);
 
-@section('content')
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h3 class="card-title">Jadwal Karyawan</h3>
-            <div class="card-toolbar">
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#form_create">
-                    <i class="bi bi-plus"></i> Tambah
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            @include('admin.absensi.jadwal_karyawan.view.list')
-        </div>
-    </div>
+        // AMBIL DARI name="" (lebih aman daripada id)
+        const payload = {
+            nama_jadwal: $form.find('[name="nama_jadwal"]').val(),
+            jam_masuk: normalizeTimeToSeconds($form.find('[name="jam_masuk"]').val()),
+            jam_pulang: normalizeTimeToSeconds($form.find('[name="jam_pulang"]').val()),
+            keterangan: $form.find('[name="keterangan"]').val(),
+        };
 
-    @include('admin.absensi.jadwal_karyawan.view.create')
-    @include('admin.absensi.jadwal_karyawan.view.edit')
-@endsection
+        Swal.fire({
+            title: 'Simpan data?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Simpan',
+            cancelButtonText: 'Batal',
+            allowOutsideClick: false
+        }).then((r) => {
+            if (!r.value) return;
 
-@section('script')
-    <script src="{{ asset('assets/plugins/datatables/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ asset('assets/plugins/datatables/dataTables.bootstrap5.min.js') }}"></script>
-    <script src="{{ asset('assets/plugins/datatables/dataTables.responsive.min.js') }}"></script>
-    <script src="{{ asset('assets/plugins/datatables/buttons/dataTables.buttons.min.js') }}"></script>
-    <script src="{{ asset('assets/plugins/datatables/buttons/buttons.html5.min.js') }}"></script>
+            // pakai DataManager kalau ada (sesuai template project kamu)
+            if (typeof DataManager !== 'undefined' && typeof DataManager.postData === 'function') {
+                DataManager.openLoading();
+                DataManager.postData('{{ route('admin.absensi.jadwal-kerja.store') }}', payload)
+                    .then(res => {
+                        Swal.close();
 
-    <script>
-        // Options dari controller
-        const sdmOptions = @json($sdmOptions ?? []);
-        const jadwalOptions = @json($jadwalOptions ?? []);
-    </script>
+                        if (res?.success) {
+                            Swal.fire('Success', res.message || 'Berhasil disimpan', 'success');
+                            $('#form_create').modal('hide');
+                            window.tableJadwalKerja?.ajax?.reload(null, false);
+                            return;
+                        }
 
-    @include('admin.absensi.jadwal_karyawan.script.list')
-    @include('admin.absensi.jadwal_karyawan.script.create')
-    @include('admin.absensi.jadwal_karyawan.script.edit')
-    @include('admin.absensi.jadwal_karyawan.script.delete')
-@endsection
+                        // tampilkan pesan validasi yang benar
+                        if (res?.errors) {
+                            const first = Object.values(res.errors).flat()[0];
+                            Swal.fire('Warning', first || 'Validasi gagal', 'warning');
+                            return;
+                        }
+
+                        Swal.fire('Warning', res?.message || 'Gagal simpan', 'warning');
+                    })
+                    .catch(err => {
+                        Swal.close();
+                        if (typeof ErrorHandler !== 'undefined') return ErrorHandler.handleError(err);
+                        console.error(err);
+                        Swal.fire('Error', 'Terjadi error, cek console/log.', 'error');
+                    });
+
+                return;
+            }
+
+            // fallback AJAX biasa
+            $.ajax({
+                url: '{{ route('admin.absensi.jadwal-kerja.store') }}',
+                method: 'POST',
+                data: payload,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="X-CSRF-TOKEN"]')?.getAttribute('content')
+                },
+                success: function (res) {
+                    if (res?.success) {
+                        Swal.fire('Success', res.message || 'Berhasil disimpan', 'success');
+                        $('#form_create').modal('hide');
+                        window.tableJadwalKerja?.ajax?.reload(null, false);
+                    } else {
+                        Swal.fire('Warning', res?.message || 'Gagal simpan', 'warning');
+                    }
+                },
+                error: function (xhr) {
+                    const msg = xhr.responseJSON?.message || xhr.statusText;
+                    Swal.fire('Error', msg, 'error');
+                }
+            });
+        });
+    });
+</script>
