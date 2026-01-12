@@ -24,11 +24,19 @@
             $('#d_total_pulang_awal').text(a.total_pulang_awal ?? '0.00');
             $('#d_total_lembur').text(a.total_lembur ?? '0.00');
             
+            // Holiday Alert Section
+            if (a.is_hari_libur == 1) {
+                $('#d_holiday_alert').show();
+                $('#d_holiday_name').text(a.holiday_name ? ('- ' + a.holiday_name) : '');
+            } else {
+                $('#d_holiday_alert').hide();
+            }
+            
             // Lembur Info Section
             const formatRupiah = (num) => 'Rp ' + new Intl.NumberFormat('id-ID').format(num || 0);
             const totalLembur = parseFloat(a.total_lembur) || 0;
             
-            if (totalLembur > 0) {
+            if (totalLembur > 0 || a.is_hari_libur == 1) {
                 $('#d_lembur_section').show();
                 $('#d_tarif_lembur_nama').text(a.tarif_lembur_nama || '-');
                 $('#d_tarif_per_jam').text(formatRupiah(a.tarif_per_jam));

@@ -66,6 +66,24 @@ final class AbsensiService
             $abs['tarif_lembur_nama'] = '-';
             $abs['tarif_per_jam'] = 0;
         }
+        
+        // Get holiday name if is_hari_libur
+        if ($absensi->is_hari_libur) {
+            $holidayType = $this->getHolidayType($absensi->tanggal);
+            if ($holidayType === 'NASIONAL') {
+                $nasional = RefLiburNasional::whereDate('tanggal', $absensi->tanggal)->first();
+                $abs['holiday_name'] = $nasional?->keterangan ?? 'Libur Nasional';
+            } elseif ($holidayType === 'MINGGU') {
+                $abs['holiday_name'] = 'Hari Minggu';
+            } elseif ($holidayType === 'PT') {
+                $pt = RefLiburPt::whereDate('tanggal', $absensi->tanggal)->first();
+                $abs['holiday_name'] = $pt?->keterangan ?? 'Libur PT';
+            } else {
+                $abs['holiday_name'] = 'Hari Libur';
+            }
+        } else {
+            $abs['holiday_name'] = null;
+        }
 
         $detail = DB::connection('mysql')->table('absensi_detail as ad')
             ->leftJoin('absen_jenis as aj', 'aj.id_jenis_absen', '=', 'ad.id_jenis_absen')
@@ -93,16 +111,28 @@ final class AbsensiService
      */
     public function create(array $data, array $detailRows): int
     {
-        // Check if date is a holiday
-        $isHariLibur = $this->isHoliday($data['tanggal']);
+        // Check holiday type for the date
+        $holidayType = $this->getHolidayType($data['tanggal']);
+        $isHariLibur = $holidayType !== null;
         
-        // Get appropriate tarif lembur based on holiday status
-        $tarifLembur = $this->getTarifLembur($isHariLibur);
+        // Get appropriate tarif lembur based on holiday type
+        $tarifLembur = $this->getTarifLembur($holidayType);
         $idTarifLembur = $tarifLembur?->id_tarif ?? null;
         $tarifPerJam = $tarifLembur?->tarif_per_jam ?? 0;
         
+        // Calculate total lembur
+        // For holiday attendance: all work hours count as overtime
+        $totalJamKerja = (float) ($data['total_jam_kerja'] ?? 0);
+        $totalLemburInput = (float) ($data['total_lembur'] ?? 0);
+        
+        if ($isHariLibur) {
+            // On holidays, work hours are added to overtime
+            $totalLembur = $totalJamKerja + $totalLemburInput;
+        } else {
+            $totalLembur = $totalLemburInput;
+        }
+        
         // Calculate nominal lembur
-        $totalLembur = (float) ($data['total_lembur'] ?? 0);
         $nominalLembur = $totalLembur * $tarifPerJam;
 
         $absensi = Absensi::create([
@@ -131,16 +161,28 @@ final class AbsensiService
      */
     public function update(Absensi $absensi, array $data, array $detailRows): void
     {
-        // Check if date is a holiday
-        $isHariLibur = $this->isHoliday($data['tanggal']);
+        // Check holiday type for the date
+        $holidayType = $this->getHolidayType($data['tanggal']);
+        $isHariLibur = $holidayType !== null;
         
-        // Get appropriate tarif lembur based on holiday status
-        $tarifLembur = $this->getTarifLembur($isHariLibur);
+        // Get appropriate tarif lembur based on holiday type
+        $tarifLembur = $this->getTarifLembur($holidayType);
         $idTarifLembur = $tarifLembur?->id_tarif ?? null;
         $tarifPerJam = $tarifLembur?->tarif_per_jam ?? 0;
         
+        // Calculate total lembur
+        // For holiday attendance: all work hours count as overtime
+        $totalJamKerja = (float) ($data['total_jam_kerja'] ?? 0);
+        $totalLemburInput = (float) ($data['total_lembur'] ?? 0);
+        
+        if ($isHariLibur) {
+            // On holidays, work hours are added to overtime
+            $totalLembur = $totalJamKerja + $totalLemburInput;
+        } else {
+            $totalLembur = $totalLemburInput;
+        }
+        
         // Calculate nominal lembur
-        $totalLembur = (float) ($data['total_lembur'] ?? 0);
         $nominalLembur = $totalLembur * $tarifPerJam;
 
         $absensi->update([
@@ -190,18 +232,30 @@ final class AbsensiService
     }
 
     /**
-     * Get appropriate tarif lembur based on holiday status
-     * Returns "Lembur Libur" for holidays, "Lembur Biasa" for regular days
+     * Get appropriate tarif lembur based on holiday type
+     * Returns "Lembur di Hari Nasional" for national holidays,
+     * "Lembur hari Libur" for Sunday/PT holidays,
+     * "Lembur Biasa" for regular days
+     * 
+     * @param string|null $holidayType - NASIONAL, MINGGU, PT, or null for regular day
      */
-    public function getTarifLembur(bool $isHariLibur): ?TarifLembur
+    public function getTarifLembur(?string $holidayType): ?TarifLembur
     {
-        if ($isHariLibur) {
-            // Try to find "Lembur Libur" tarif
-            $tarif = TarifLembur::where('nama_tarif', 'LIKE', '%Libur%')->first();
+        if ($holidayType === 'NASIONAL') {
+            // Try to find "Lembur di Hari Nasional" tarif (highest priority)
+            $tarif = TarifLembur::where('nama_tarif', 'LIKE', '%Nasional%')->first();
             if ($tarif) return $tarif;
         }
         
-        // Default to "Lembur Biasa" or first available tarif
+        if ($holidayType === 'MINGGU' || $holidayType === 'PT') {
+            // Try to find "Lembur hari Libur" tarif
+            $tarif = TarifLembur::where('nama_tarif', 'LIKE', '%Libur%')
+                ->where('nama_tarif', 'NOT LIKE', '%Nasional%')
+                ->first();
+            if ($tarif) return $tarif;
+        }
+        
+        // Default to "Lembur Biasa" for regular days
         $tarif = TarifLembur::where('nama_tarif', 'LIKE', '%Biasa%')->first();
         if ($tarif) return $tarif;
         
@@ -210,37 +264,47 @@ final class AbsensiService
     }
 
     /**
+     * Get holiday type for a specific date
+     * Returns: 'NASIONAL', 'MINGGU', 'PT', or null for regular day
+     */
+    public function getHolidayType(string $date): ?string
+    {
+        // Check Libur Nasional first (highest priority)
+        if (RefLiburNasional::whereDate('tanggal', $date)->exists()) {
+            return 'NASIONAL';
+        }
+        
+        // Check Sunday
+        if ((int) date('w', strtotime($date)) === 0) {
+            return 'MINGGU';
+        }
+        
+        // Check Libur PT
+        if (RefLiburPt::whereDate('tanggal', $date)->exists()) {
+            return 'PT';
+        }
+        
+        return null;
+    }
+
+    /**
      * Get holiday info for a specific date (for AJAX)
      */
     public function getHolidayInfo(string $date): array
     {
-        $isHoliday = $this->isHoliday($date);
-        $tarif = $this->getTarifLembur($isHoliday);
+        $holidayType = $this->getHolidayType($date);
+        $isHoliday = $holidayType !== null;
+        $tarif = $this->getTarifLembur($holidayType);
         
         $holidayName = null;
-        $holidayType = null;
-        if ($isHoliday) {
-            $dayOfWeek = (int) date('w', strtotime($date));
-            if ($dayOfWeek === 0) {
-                $holidayName = 'Hari Minggu';
-                $holidayType = 'MINGGU';
-            } else {
-                $nasional = RefLiburNasional::whereDate('tanggal', $date)->first();
-                if ($nasional) {
-                    // Kolom yang tersedia di tabel ref_libur_nasional pada project ini: tanggal, keterangan
-                    $holidayName = $nasional->keterangan ?? 'Libur Nasional';
-                    $holidayType = 'NASIONAL';
-                } else {
-                    $pt = RefLiburPt::whereDate('tanggal', $date)->first();
-                    if ($pt) {
-                        $holidayName = $pt->keterangan ?? 'Libur PT';
-                        $holidayType = 'PT';
-                    } else {
-                        $holidayName = 'Hari Libur';
-                        $holidayType = 'UNKNOWN';
-                    }
-                }
-            }
+        if ($holidayType === 'NASIONAL') {
+            $nasional = RefLiburNasional::whereDate('tanggal', $date)->first();
+            $holidayName = $nasional?->keterangan ?? 'Libur Nasional';
+        } elseif ($holidayType === 'MINGGU') {
+            $holidayName = 'Hari Minggu';
+        } elseif ($holidayType === 'PT') {
+            $pt = RefLiburPt::whereDate('tanggal', $date)->first();
+            $holidayName = $pt?->keterangan ?? 'Libur PT';
         }
         
         return [
@@ -324,13 +388,22 @@ final class AbsensiService
     public function jadwalOptions(): Collection
     {
         try {
-            return JadwalKaryawan::query()
-                ->select(['id_jadwal_karyawan', DB::raw('nama_jadwal as nama'), 'jam_masuk', 'jam_pulang'])
-                ->orderBy('nama_jadwal')
+            return DB::connection('mysql')
+                ->table('sdm_jadwal_karyawan as sjk')
+                ->join('master_jadwal_kerja as mjk', 'mjk.id_jadwal', '=', 'sjk.id_jadwal')
+                ->select([
+                    'sjk.id_jadwal_karyawan',
+                    'mjk.nama_jadwal as nama',
+                    'mjk.jam_masuk',
+                    'mjk.jam_pulang',
+                    'sjk.tanggal_mulai',
+                    'sjk.tanggal_selesai',
+                ])
+                ->orderBy('mjk.nama_jadwal')
                 ->get()
-                ->map(fn ($r) => $r->toArray());
+                ->map(fn ($r) => (array) $r);
         } catch (Throwable) {
-            return collect([['id_jadwal_karyawan' => 1, 'nama' => 'Default (#1)', 'jam_masuk' => '07:00:00', 'jam_pulang' => '15:00:00']]);
+            return collect([]);
         }
     }
 
@@ -368,18 +441,37 @@ final class AbsensiService
         return $row?->nama;
     }
 
-    private function getJadwalName(int $idJadwal): ?string
+    private function getJadwalName(int $idJadwalKaryawan): ?string
     {
         try {
-            $row = JadwalKaryawan::query()
-                ->select(['nama_jadwal'])
-                ->where('id_jadwal_karyawan', $idJadwal)
+            $row = DB::connection('mysql')
+                ->table('sdm_jadwal_karyawan as sjk')
+                ->join('master_jadwal_kerja as mjk', 'mjk.id_jadwal', '=', 'sjk.id_jadwal')
+                ->where('sjk.id_jadwal_karyawan', $idJadwalKaryawan)
+                ->select(['mjk.nama_jadwal', 'mjk.jam_masuk', 'mjk.jam_pulang'])
                 ->first();
 
-            return $row?->nama_jadwal;
+            if (!$row) return null;
+            return $row->nama_jadwal . ' (' . $row->jam_masuk . ' - ' . $row->jam_pulang . ')';
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Resolve id_jadwal_karyawan for a given SDM on a specific date
+     */
+    public function resolveJadwalForSdm(int $idSdm, string $tanggal): ?int
+    {
+        $row = DB::connection('mysql')
+            ->table('sdm_jadwal_karyawan')
+            ->where('id_sdm', $idSdm)
+            ->whereDate('tanggal_mulai', '<=', $tanggal)
+            ->whereDate('tanggal_selesai', '>=', $tanggal)
+            ->orderByDesc('tanggal_mulai')
+            ->first(['id_jadwal_karyawan']);
+
+        return $row?->id_jadwal_karyawan;
     }
     
 }

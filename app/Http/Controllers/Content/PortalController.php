@@ -42,8 +42,12 @@ final class PortalController extends Controller
         $validationRules = [
             'username' => 'required',
             'password' => 'required',
-            'g-recaptcha-response' => 'required',
         ];
+        
+        // Only require reCAPTCHA in production
+        if (config('app.env') === 'production') {
+            $validationRules['g-recaptcha-response'] = 'required';
+        }
 
         $customMessages = [
             'username.required' => 'Nama Pengguna harus diisi.',

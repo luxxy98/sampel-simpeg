@@ -13,6 +13,20 @@
             </div>
 
             <div class="modal-body">
+                {{-- Holiday Alert Badge --}}
+                <div class="row mb-3" id="d_holiday_alert" style="display: none;">
+                    <div class="col-12">
+                        <div class="alert alert-warning d-flex align-items-center py-2 mb-0">
+                            <i class="bi bi-calendar-x-fill fs-4 me-2 text-warning"></i>
+                            <div>
+                                <span class="fw-bold">Absensi di Hari Libur!</span>
+                                <span id="d_holiday_name" class="ms-1"></span>
+                                <span class="badge bg-warning text-dark ms-2" id="d_holiday_info">Jam kerja dihitung sebagai lembur</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row mb-4">
                     <div class="col-md-4 mb-3">
                         <label class="fw-bolder text-gray-600 d-block mb-1">Tanggal</label>

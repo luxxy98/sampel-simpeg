@@ -38,15 +38,24 @@
             $('#edit_total_jam_kerja').val('0.00');
             $('#edit_total_terlambat').val('0.00');
             $('#edit_total_pulang_awal').val('0.00');
+            $('#edit_total_lembur').val('0.00');
             return;
         }
 
         const jamMasukMenit = parseTimeToMinutesEdit(jadwal.jam_masuk);
         const jamPulangMenit = parseTimeToMinutesEdit(jadwal.jam_pulang);
+        
+        // Hitung durasi jadwal normal (dalam jam)
+        let durasiJadwalNormal = (jamPulangMenit - jamMasukMenit) / 60;
+        // Handle overnight shift (misalnya 22:00 - 06:00 = 8 jam)
+        if (durasiJadwalNormal <= 0) {
+            durasiJadwalNormal += 24; // shift melewati tengah malam
+        }
 
         let totalJamKerja = 0;
         let totalTerlambat = 0;
         let totalPulangAwal = 0;
+        let totalLembur = 0;
 
         $('#table_detail_edit tbody tr').each(function() {
             const $row = $(this);
@@ -65,10 +74,44 @@
                     totalTerlambat += (jamDatangMenit - jamMasukMenit) / 60;
                 }
 
-                // Hitung pulang awal (jam pulang < jam pulang jadwal)
-                const jamPulangAktualMenit = extractTimeFromDatetimeEdit(waktuSelesai);
-                if (jamPulangAktualMenit !== null && jamPulangAktualMenit < jamPulangMenit) {
-                    totalPulangAwal += (jamPulangMenit - jamPulangAktualMenit) / 60;
+                // Hitung pulang awal dan lembur menggunakan full datetime comparison
+                if (waktuMulai && waktuSelesai) {
+                    const startDate = new Date(waktuMulai.replace(' ', 'T'));
+                    const endDate = new Date(waktuSelesai.replace(' ', 'T'));
+                    
+                    // Buat jadwal pulang berdasarkan tanggal mulai
+                    const scheduledEnd = new Date(startDate);
+                    const pulangHours = Math.floor(jamPulangMenit / 60);
+                    const pulangMinutes = jamPulangMenit % 60;
+                    scheduledEnd.setHours(pulangHours, pulangMinutes, 0, 0);
+                    
+                    // Jika jadwal pulang <= jam masuk, berarti shift melewati tengah malam (misal 22:00-06:00)
+                    if (jamPulangMenit <= jamMasukMenit) {
+                        scheduledEnd.setDate(scheduledEnd.getDate() + 1);
+                    }
+                    
+                    // Jika waktu selesai lebih kecil dari waktu mulai, berarti melewati tengah malam
+                    // Contoh: masuk 15:00, pulang 00:00 keesokan hari
+                    let adjustedEndDate = new Date(endDate);
+                    // Cek berdasarkan jam: jika jam selesai < jam mulai, berarti sudah lewat tengah malam
+                    const endHour = endDate.getHours();
+                    const startHour = startDate.getHours();
+                    if (endHour < startHour && endDate.getTime() <= startDate.getTime()) {
+                        // Waktu selesai di hari berikutnya
+                        adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+                    }
+                    
+                    // Pulang awal: jika waktu selesai < jadwal pulang
+                    if (adjustedEndDate < scheduledEnd) {
+                        const diffMs = scheduledEnd.getTime() - adjustedEndDate.getTime();
+                        totalPulangAwal += diffMs / 3600000; // convert ms to hours
+                    }
+                    
+                    // Lembur: jika waktu selesai > jadwal pulang
+                    if (adjustedEndDate > scheduledEnd) {
+                        const diffMs = adjustedEndDate.getTime() - scheduledEnd.getTime();
+                        totalLembur += diffMs / 3600000; // convert ms to hours
+                    }
                 }
             }
         });
@@ -76,6 +119,13 @@
         $('#edit_total_jam_kerja').val(totalJamKerja.toFixed(2));
         $('#edit_total_terlambat').val(totalTerlambat.toFixed(2));
         $('#edit_total_pulang_awal').val(totalPulangAwal.toFixed(2));
+        $('#edit_total_lembur').val(totalLembur.toFixed(2));
+
+        // Update nominal lembur based on new total lembur
+        const tarifPerJam = parseFloat($('#edit_tarif_per_jam').val()) || 0;
+        const nominalLembur = totalLembur * tarifPerJam;
+        $('#edit_nominal_lembur').val(nominalLembur);
+        $('#edit_nominal_lembur_display').val('Rp ' + new Intl.NumberFormat('id-ID').format(nominalLembur));
     }
 
     // Auto-resolve jadwal edit berdasarkan tabel assignment sdm_jadwal_karyawan
@@ -128,6 +178,19 @@
         $('#edit_total_jam_kerja').val(abs.total_jam_kerja);
         $('#edit_total_terlambat').val(abs.total_terlambat);
         $('#edit_total_pulang_awal').val(abs.total_pulang_awal);
+        $('#edit_total_lembur').val(abs.total_lembur || '0.00');
+
+        // Populate tarif lembur fields
+        $('#edit_is_hari_libur').val(abs.is_hari_libur || 0);
+        $('#edit_id_tarif_lembur').val(abs.id_tarif_lembur || '');
+        $('#edit_tarif_lembur_info').val(abs.tarif_lembur_nama || '-');
+        $('#edit_tarif_per_jam').val(abs.tarif_per_jam || 0);
+        $('#edit_tarif_per_jam_display').val('Rp ' + new Intl.NumberFormat('id-ID').format(abs.tarif_per_jam || 0));
+        
+        // Calculate and display nominal lembur
+        const nominalLembur = (parseFloat(abs.total_lembur) || 0) * (parseFloat(abs.tarif_per_jam) || 0);
+        $('#edit_nominal_lembur').val(nominalLembur);
+        $('#edit_nominal_lembur_display').val('Rp ' + new Intl.NumberFormat('id-ID').format(nominalLembur));
 
         const $tbody = $('#table_detail_edit tbody');
         $tbody.html('');
@@ -203,7 +266,6 @@
             const action = '{{ route('admin.absensi.update', ['id' => '___ID___']) }}'.replace('___ID___', id);
             const form = document.getElementById('bt_submit_edit_absensi');
             const formData = new FormData(form);
-            formData.append('_method', 'PUT');
 
             DataManager.formData(action, formData).then(response => {
                 if (response.success) {

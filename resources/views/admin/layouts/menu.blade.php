@@ -68,6 +68,10 @@
             href="{{ route('admin.gaji.distribusi.index') }}">
             <span class="menu-title px-4">Distribusi Transfer</span>
         </a>
+        <a class="menu-link {{ request()->routeIs('admin.gaji.tarif-lembur.*') ? 'active' : '' }}"
+            href="{{ route('admin.gaji.tarif-lembur.index') }}">
+            <span class="menu-title px-4">Tarif Lembur</span>
+        </a>
     </div>
 </div>
 

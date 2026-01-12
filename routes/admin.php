@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\Gaji\GajiTrxController;
 use App\Http\Controllers\Admin\Gaji\GajiKomponenController;
 use App\Http\Controllers\Admin\Gaji\GajiJenisKomponenController;
 use App\Http\Controllers\Admin\Gaji\GajiDistribusiController;
+use App\Http\Controllers\Admin\Gaji\TarifLemburController;
 
 
 Route::get('view-file/{folder}/{filename}', [PortalController::class, 'viewFile'])
@@ -281,6 +282,7 @@ Route::prefix('ref')->group(function () {
     Route::post('update/{id}', [AbsensiController::class, 'update'])->name('absensi.update');
     Route::post('destroy/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
     Route::get('jadwal-karyawan/options', [AbsensiController::class, 'jadwalKaryawanOptions'])->name('absensi.jadwal-karyawan.options');
+    Route::get('holiday-info', [AbsensiController::class, 'holidayInfo'])->name('absensi.holiday-info');
 
     Route::prefix('jenis')->group(function () {
         Route::get('/', [AbsenJenisController::class, 'index'])->name('absensi.jenis.index');
@@ -352,6 +354,14 @@ Route::prefix('ref')->group(function () {
         Route::post('store', [GajiDistribusiController::class, 'store'])->name('gaji.distribusi.store');
         Route::post('update/{id}', [GajiDistribusiController::class, 'update'])->name('gaji.distribusi.update');
         Route::post('destroy/{id}', [GajiDistribusiController::class, 'destroy'])->name('gaji.distribusi.destroy');
+    });
+
+    Route::prefix('tarif-lembur')->group(function () {
+        Route::get('/', [TarifLemburController::class, 'index'])->name('gaji.tarif-lembur.index');
+        Route::get('data', [TarifLemburController::class, 'list'])->name('gaji.tarif-lembur.list');
+        Route::post('store', [TarifLemburController::class, 'store'])->name('gaji.tarif-lembur.store');
+        Route::post('update/{id}', [TarifLemburController::class, 'update'])->name('gaji.tarif-lembur.update');
+        Route::post('destroy/{id}', [TarifLemburController::class, 'destroy'])->name('gaji.tarif-lembur.destroy');
     });
 });
 

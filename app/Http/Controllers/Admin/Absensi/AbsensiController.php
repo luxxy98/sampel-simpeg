@@ -165,6 +165,24 @@ final class AbsensiController extends Controller
         'options' => $options
     ]);
 }
+
+    /**
+     * Get holiday info and tarif lembur for a specific date.
+     * Returns tarif lembur info (id, nama, tarif_per_jam) based on whether date is holiday.
+     */
+    public function holidayInfo(Request $request): JsonResponse
+    {
+        $tanggal = (string) ($request->get('tanggal') ?? '');
+
+        if (!$tanggal) {
+            return $this->response->errorResponse('Parameter tanggal wajib diisi', 422);
+        }
+
+        $info = $this->service->getHolidayInfo($tanggal);
+
+        return $this->response->successResponse('OK', $info);
+    }
+
 public function jadwalKaryawanOptionsForDate(int $idSdm, string $tanggal): array
 {
     return DB::connection('mysql')

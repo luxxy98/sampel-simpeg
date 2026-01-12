@@ -85,15 +85,24 @@
             $('#total_jam_kerja').val('0.00');
             $('#total_terlambat').val('0.00');
             $('#total_pulang_awal').val('0.00');
+            $('#total_lembur').val('0.00');
             return;
         }
 
         const jamMasukMenit = parseTimeToMinutes(jadwal.jam_masuk);
         const jamPulangMenit = parseTimeToMinutes(jadwal.jam_pulang);
+        
+        // Hitung durasi jadwal normal (dalam jam)
+        let durasiJadwalNormal = (jamPulangMenit - jamMasukMenit) / 60;
+        // Handle overnight shift (misalnya 22:00 - 06:00 = 8 jam)
+        if (durasiJadwalNormal <= 0) {
+            durasiJadwalNormal += 24; // shift melewati tengah malam
+        }
 
         let totalJamKerja = 0;
         let totalTerlambat = 0;
         let totalPulangAwal = 0;
+        let totalLembur = 0;
 
         $('#table_detail_create tbody tr').each(function() {
             const $row = $(this);
@@ -112,10 +121,44 @@
                     totalTerlambat += (jamDatangMenit - jamMasukMenit) / 60;
                 }
 
-                // Hitung pulang awal (jam pulang < jam pulang jadwal)
-                const jamPulangAktualMenit = extractTimeFromDatetime(waktuSelesai);
-                if (jamPulangAktualMenit !== null && jamPulangAktualMenit < jamPulangMenit) {
-                    totalPulangAwal += (jamPulangMenit - jamPulangAktualMenit) / 60;
+                // Hitung pulang awal dan lembur menggunakan full datetime comparison
+                if (waktuMulai && waktuSelesai) {
+                    const startDate = new Date(waktuMulai.replace(' ', 'T'));
+                    const endDate = new Date(waktuSelesai.replace(' ', 'T'));
+                    
+                    // Buat jadwal pulang berdasarkan tanggal mulai
+                    const scheduledEnd = new Date(startDate);
+                    const pulangHours = Math.floor(jamPulangMenit / 60);
+                    const pulangMinutes = jamPulangMenit % 60;
+                    scheduledEnd.setHours(pulangHours, pulangMinutes, 0, 0);
+                    
+                    // Jika jadwal pulang <= jam masuk, berarti shift melewati tengah malam (misal 22:00-06:00)
+                    if (jamPulangMenit <= jamMasukMenit) {
+                        scheduledEnd.setDate(scheduledEnd.getDate() + 1);
+                    }
+                    
+                    // Jika waktu selesai lebih kecil dari waktu mulai, berarti melewati tengah malam
+                    // Contoh: masuk 15:00, pulang 00:00 keesokan hari
+                    let adjustedEndDate = new Date(endDate);
+                    // Cek berdasarkan jam: jika jam selesai < jam mulai, berarti sudah lewat tengah malam
+                    const endHour = endDate.getHours();
+                    const startHour = startDate.getHours();
+                    if (endHour < startHour && endDate.getTime() <= startDate.getTime()) {
+                        // Waktu selesai di hari berikutnya
+                        adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+                    }
+                    
+                    // Pulang awal: jika waktu selesai < jadwal pulang
+                    if (adjustedEndDate < scheduledEnd) {
+                        const diffMs = scheduledEnd.getTime() - adjustedEndDate.getTime();
+                        totalPulangAwal += diffMs / 3600000; // convert ms to hours
+                    }
+                    
+                    // Lembur: jika waktu selesai > jadwal pulang
+                    if (adjustedEndDate > scheduledEnd) {
+                        const diffMs = adjustedEndDate.getTime() - scheduledEnd.getTime();
+                        totalLembur += diffMs / 3600000; // convert ms to hours
+                    }
                 }
             }
         });
@@ -123,6 +166,59 @@
         $('#total_jam_kerja').val(totalJamKerja.toFixed(2));
         $('#total_terlambat').val(totalTerlambat.toFixed(2));
         $('#total_pulang_awal').val(totalPulangAwal.toFixed(2));
+        $('#total_lembur').val(totalLembur.toFixed(2));
+
+        // Calculate nominal lembur based on tarif per jam
+        const tarifPerJam = parseFloat($('#tarif_per_jam').val()) || 0;
+        const nominalLembur = totalLembur * tarifPerJam;
+        $('#nominal_lembur').val(nominalLembur);
+        $('#nominal_lembur_display').val('Rp ' + new Intl.NumberFormat('id-ID').format(nominalLembur));
+    }
+
+    // Load holiday info and tarif lembur based on selected date
+    function loadHolidayInfo(tanggal) {
+        if (!tanggal) {
+            $('#id_tarif_lembur').val('');
+            $('#tarif_lembur_info').val('-');
+            $('#tarif_per_jam').val('0');
+            $('#tarif_per_jam_display').val('Rp 0');
+            $('#is_hari_libur').val('0');
+            $('#holiday_badge').hide();
+            recalculateTotals();
+            return;
+        }
+
+        $.ajax({
+            url: "{{ route('admin.absensi.holiday-info') }}",
+            method: "GET",
+            data: { tanggal: tanggal },
+            success: function (res) {
+                if (res.success && res.data) {
+                    const data = res.data;
+                    
+                    // Set tarif lembur info
+                    $('#id_tarif_lembur').val(data.id_tarif_lembur || '');
+                    $('#tarif_lembur_info').val(data.nama_tarif || '-');
+                    $('#tarif_per_jam').val(data.tarif_per_jam || 0);
+                    $('#tarif_per_jam_display').val('Rp ' + new Intl.NumberFormat('id-ID').format(data.tarif_per_jam || 0));
+                    $('#is_hari_libur').val(data.is_hari_libur ? '1' : '0');
+                    
+                    // Show/hide holiday badge
+                    if (data.is_hari_libur && data.holiday_name) {
+                        $('#holiday_name').text(data.holiday_name);
+                        $('#holiday_badge').show();
+                    } else {
+                        $('#holiday_badge').hide();
+                    }
+                    
+                    // Recalculate nominal lembur with new tarif
+                    recalculateTotals();
+                }
+            },
+            error: function (xhr) {
+                console.error('Failed to load holiday info:', xhr);
+            }
+        });
     }
 
     $('#form_create').on('show.bs.modal', function () {
@@ -196,12 +292,14 @@ $('#id_sdm').off('change.loadJadwal').on('change.loadJadwal', function () {
 // trigger saat tanggal berubah (flatpickr)
 const fp = $('#tanggal').data('flatpickr');
 if (fp) {
-    fp.set('onChange', function () {
+    fp.set('onChange', function (selectedDates, dateStr) {
         loadJadwalKaryawanBySdmTanggal();
+        loadHolidayInfo(dateStr);
     });
 } else {
     $('#tanggal').off('change.loadJadwal').on('change.loadJadwal', function () {
         loadJadwalKaryawanBySdmTanggal();
+        loadHolidayInfo($(this).val());
     });
 }
 
