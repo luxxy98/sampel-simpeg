@@ -56,12 +56,7 @@
 
                         <div class="col-12">
                             <hr class="my-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="fw-bolder mb-0">Detail Absensi</h6>
-                                <button type="button" class="btn btn-sm btn-light-primary" id="btn_add_detail_row_edit">
-                                    + Tambah Baris
-                                </button>
-                            </div>
+                            <h6 class="fw-bolder mb-2">Detail Absensi</h6>
                         </div>
 
                         <div class="col-12">
@@ -75,7 +70,6 @@
                                         <th style="min-width: 190px;">Waktu Selesai</th>
                                         <th style="min-width: 120px;">Durasi (Jam)</th>
                                         <th style="min-width: 220px;">Lokasi Pulang</th>
-                                        <th style="width: 60px;">Aksi</th>
                                     </tr>
                                     </thead>
                                     <tbody></tbody>

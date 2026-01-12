@@ -31,9 +31,6 @@
                 <td><input type="text" class="form-control form-control-sm ${prefix}detail_selesai" name="${prefix}detail[waktu_selesai][]" placeholder="YYYY-MM-DD HH:mm:ss"></td>
                 <td><input type="number" step="0.01" class="form-control form-control-sm ${prefix}detail_durasi" name="${prefix}detail[durasi_jam][]" value="0.00"></td>
                 <td><input type="text" class="form-control form-control-sm" name="${prefix}detail[lokasi_pulang][]" placeholder="Lokasi pulang"></td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-light-danger btn_remove_row">Hapus</button>
-                </td>
             </tr>
         `;
     }
@@ -327,24 +324,11 @@ loadJadwalKaryawanBySdmTanggal();
         $('#id_sdm').off('change.resolve').on('change.resolve', resolveJadwalCreate);
         $('#tanggal').off('change.resolve').on('change.resolve', resolveJadwalCreate);
 
-        // default 1 row
+        // default 1 row (single record per day)
         const $tbody = $('#table_detail_create tbody');
         $tbody.html(buildDetailRow(1));
         $tbody.find('[data-control="select2"]').select2({ dropdownParent: $('#form_create') });
         $tbody.find('.detail_mulai, .detail_selesai').flatpickr({ enableTime: true, enableSeconds: true, dateFormat: 'Y-m-d H:i:S' });
-
-        $('#btn_add_detail_row').off('click').on('click', function () {
-            const idx = $tbody.find('tr').length + 1;
-            $tbody.append(buildDetailRow(idx));
-            $tbody.find('tr:last [data-control="select2"]').select2({ dropdownParent: $('#form_create') });
-            $tbody.find('tr:last .detail_mulai, tr:last .detail_selesai').flatpickr({ enableTime: true, enableSeconds: true, dateFormat: 'Y-m-d H:i:S' });
-        });
-
-        $tbody.off('click', '.btn_remove_row').on('click', '.btn_remove_row', function () {
-            $(this).closest('tr').remove();
-            reindexTable($tbody);
-            recalculateTotals();
-        });
 
         // Recalculate when time changes
         $tbody.off('change', '.detail_mulai, .detail_selesai').on('change', '.detail_mulai, .detail_selesai', function () {

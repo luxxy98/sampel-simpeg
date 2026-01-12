@@ -215,7 +215,6 @@
                     <td><input type="text" class="form-control form-control-sm edit_detail_selesai" name="detail[waktu_selesai][]" value="${d.waktu_selesai || ''}"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm edit_detail_durasi" name="detail[durasi_jam][]" value="${d.durasi_jam || '0.00'}"></td>
                     <td><input type="text" class="form-control form-control-sm" name="detail[lokasi_pulang][]" value="${d.lokasi_pulang || ''}"></td>
-                    <td><button type="button" class="btn btn-sm btn-light-danger btn_remove_row">Hapus</button></td>
                 </tr>
             `);
         });
@@ -226,12 +225,6 @@
         });
 
         $tbody.find('.edit_detail_mulai, .edit_detail_selesai').flatpickr({ enableTime: true, enableSeconds: true, dateFormat: 'Y-m-d H:i:S' });
-
-        $tbody.off('click', '.btn_remove_row').on('click', '.btn_remove_row', function () {
-            $(this).closest('tr').remove();
-            reindexTable($tbody);
-            recalculateTotalsEdit();
-        });
 
         // Re-bind change for duration calculation
         $tbody.off('change', '.edit_detail_mulai, .edit_detail_selesai').on('change', '.edit_detail_mulai, .edit_detail_selesai', function () {
@@ -293,38 +286,6 @@
         // Recalculate when jadwal changes
         $('#edit_id_jadwal_karyawan').off('change.calc').on('change.calc', function() {
             recalculateTotalsEdit();
-        });
-
-       // Add row functionality for edit
-       $('#btn_add_detail_row_edit').off('click').on('click', function () {
-            const $tbody = $('#table_detail_edit tbody');
-             const idx = $tbody.find('tr').length + 1;
-             const jenisOptions = `@isset($jenisAbsenOptions)
-                @foreach($jenisAbsenOptions as $j)
-                    <option value="{{ $j['id_jenis_absen'] }}">{{ $j['nama_absen'] ?? ('Jenis #' . $j['id_jenis_absen']) }}</option>
-                @endforeach
-            @endisset`;
-
-            $tbody.append(`
-                <tr>
-                    <td class="text-muted">${idx}</td>
-                    <td>
-                        <select class="form-select form-select-sm edit_detail_jenis" name="detail[id_jenis_absen][]" data-control="select2">
-                            <option value="">-- pilih --</option>
-                            ${jenisOptions}
-                        </select>
-                    </td>
-                    <td><input type="text" class="form-control form-control-sm edit_detail_mulai" name="detail[waktu_mulai][]" placeholder="YYYY-MM-DD HH:mm:ss"></td>
-                    <td><input type="text" class="form-control form-control-sm edit_detail_selesai" name="detail[waktu_selesai][]" placeholder="YYYY-MM-DD HH:mm:ss"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm edit_detail_durasi" name="detail[durasi_jam][]" value="0.00"></td>
-                    <td><input type="text" class="form-control form-control-sm" name="detail[lokasi_pulang][]" placeholder="Lokasi pulang"></td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-light-danger btn_remove_row">Hapus</button>
-                    </td>
-                </tr>
-            `);
-             $tbody.find('tr:last [data-control="select2"]').select2({ dropdownParent: $('#form_edit') });
-             $tbody.find('tr:last .edit_detail_mulai, tr:last .edit_detail_selesai').flatpickr({ enableTime: true, enableSeconds: true, dateFormat: 'Y-m-d H:i:S' });
         });
     });
 </script>
