@@ -28,6 +28,9 @@ use App\Http\Controllers\Admin\Gaji\GajiKomponenController;
 use App\Http\Controllers\Admin\Gaji\GajiJenisKomponenController;
 use App\Http\Controllers\Admin\Gaji\GajiDistribusiController;
 use App\Http\Controllers\Admin\Gaji\TarifLemburController;
+use App\Http\Controllers\Admin\Cuti\CutiJenisController;
+use App\Http\Controllers\Admin\Cuti\CutiPengajuanController;
+use App\Http\Controllers\Admin\Cuti\CutiRekapController;
 
 
 Route::get('view-file/{folder}/{filename}', [PortalController::class, 'viewFile'])
@@ -364,4 +367,33 @@ Route::prefix('ref')->group(function () {
         Route::post('destroy/{id}', [TarifLemburController::class, 'destroy'])->name('gaji.tarif-lembur.destroy');
     });
 });
+
+Route::prefix('cuti')->group(function () {
+
+    Route::prefix('jenis')->group(function () {
+        Route::get('/', [CutiJenisController::class, 'index'])->name('cuti.jenis.index');
+        Route::get('data', [CutiJenisController::class, 'list'])->name('cuti.jenis.list');
+        Route::get('show/{id}', [CutiJenisController::class, 'show'])->name('cuti.jenis.show');
+        Route::post('store', [CutiJenisController::class, 'store'])->name('cuti.jenis.store');
+        Route::post('update/{id}', [CutiJenisController::class, 'update'])->name('cuti.jenis.update');
+        Route::post('destroy/{id}', [CutiJenisController::class, 'destroy'])->name('cuti.jenis.destroy');
+    });
+
+    Route::prefix('pengajuan')->group(function () {
+        Route::get('/', [CutiPengajuanController::class, 'index'])->name('cuti.pengajuan.index');
+        Route::get('data', [CutiPengajuanController::class, 'list'])->name('cuti.pengajuan.list');
+        Route::get('show/{id}', [CutiPengajuanController::class, 'show'])->name('cuti.pengajuan.show');
+        Route::post('store', [CutiPengajuanController::class, 'store'])->name('cuti.pengajuan.store');
+        Route::post('update/{id}', [CutiPengajuanController::class, 'update'])->name('cuti.pengajuan.update');
+        Route::post('approve/{id}', [CutiPengajuanController::class, 'approve'])->name('cuti.pengajuan.approve');
+        Route::post('destroy/{id}', [CutiPengajuanController::class, 'destroy'])->name('cuti.pengajuan.destroy');
+    });
+
+    Route::prefix('rekap')->group(function () {
+        Route::get('/', [CutiRekapController::class, 'index'])->name('cuti.rekap.index');
+        Route::get('data', [CutiRekapController::class, 'list'])->name('cuti.rekap.list');
+    });
+
+});
+
 

@@ -18,7 +18,6 @@
                 <span class="menu-title">SDM</span>
             </a>
 
-
             @php $absensiActive = request()->routeIs('admin.absensi.*'); @endphp
             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $absensiActive ? 'here show' : '' }}">
                 <span class="menu-link">
@@ -45,36 +44,57 @@
                 </div>
             </div>
 
-@php $gajiActive = request()->routeIs('admin.gaji.*'); @endphp
-<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $gajiActive ? 'here show' : '' }}">
-    <span class="menu-link">
-        <span class="menu-title">Gaji</span>
-        <span class="menu-arrow"></span>
-    </span>
-    <div class="menu-sub menu-sub-accordion menu-active-bg">
-        <a class="menu-link {{ request()->routeIs('admin.gaji.periode.*') ? 'active' : '' }}"
-           href="{{ route('admin.gaji.periode.index') }}">
-            <span class="menu-title px-4">Periode Gaji</span>
-        </a>
-        <a class="menu-link {{ request()->routeIs('admin.gaji.trx.*') ? 'active' : '' }}"
-           href="{{ route('admin.gaji.trx.index') }}">
-            <span class="menu-title px-4">Transaksi Gaji</span>
-        </a>
-        <a class="menu-link {{ request()->routeIs('admin.gaji.komponen.*') ? 'active' : '' }}"
-           href="{{ route('admin.gaji.komponen.index') }}">
-            <span class="menu-title px-4">Komponen Gaji</span>
-        </a>
-        <a class="menu-link {{ request()->routeIs('admin.gaji.distribusi.*') ? 'active' : '' }}"
-            href="{{ route('admin.gaji.distribusi.index') }}">
-            <span class="menu-title px-4">Distribusi Transfer</span>
-        </a>
-        <a class="menu-link {{ request()->routeIs('admin.gaji.tarif-lembur.*') ? 'active' : '' }}"
-            href="{{ route('admin.gaji.tarif-lembur.index') }}">
-            <span class="menu-title px-4">Tarif Lembur</span>
-        </a>
-    </div>
-</div>
+            @php $cutiActive = request()->routeIs('admin.cuti.*'); @endphp
+            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $cutiActive ? 'here show' : '' }}">
+                <span class="menu-link">
+                    <span class="menu-title">Cuti</span>
+                    <span class="menu-arrow"></span>
+                </span>
+                <div class="menu-sub menu-sub-accordion menu-active-bg">
+                    <a class="menu-link {{ request()->routeIs('admin.cuti.pengajuan.*') ? 'active' : '' }}"
+                    href="{{ route('admin.cuti.pengajuan.index') }}">
+                        <span class="menu-title px-4">Pengajuan Cuti</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.cuti.jenis.*') ? 'active' : '' }}"
+                    href="{{ route('admin.cuti.jenis.index') }}">
+                        <span class="menu-title px-4">Jenis Cuti</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.cuti.rekap.*') ? 'active' : '' }}"
+                    href="{{ route('admin.cuti.rekap.index') }}">
+                        <span class="menu-title px-4">Rekap Cuti</span>
+                    </a>
+                </div>
+            </div>
 
+            @php $gajiActive = request()->routeIs('admin.gaji.*'); @endphp
+            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $gajiActive ? 'here show' : '' }}">
+                <span class="menu-link">
+                    <span class="menu-title">Gaji</span>
+                    <span class="menu-arrow"></span>
+                </span>
+                <div class="menu-sub menu-sub-accordion menu-active-bg">
+                    <a class="menu-link {{ request()->routeIs('admin.gaji.periode.*') ? 'active' : '' }}"
+                    href="{{ route('admin.gaji.periode.index') }}">
+                        <span class="menu-title px-4">Periode Gaji</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.gaji.trx.*') ? 'active' : '' }}"
+                    href="{{ route('admin.gaji.trx.index') }}">
+                        <span class="menu-title px-4">Transaksi Gaji</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.gaji.komponen.*') ? 'active' : '' }}"
+                    href="{{ route('admin.gaji.komponen.index') }}">
+                        <span class="menu-title px-4">Komponen Gaji</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.gaji.distribusi.*') ? 'active' : '' }}"
+                        href="{{ route('admin.gaji.distribusi.index') }}">
+                        <span class="menu-title px-4">Distribusi Transfer</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.gaji.tarif-lembur.*') ? 'active' : '' }}"
+                        href="{{ route('admin.gaji.tarif-lembur.index') }}">
+                        <span class="menu-title px-4">Tarif Lembur</span>
+                    </a>
+                </div>
+            </div>
 
             @php
                 $referensiActive =
