@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\Gaji\TarifLemburController;
 use App\Http\Controllers\Admin\Cuti\CutiJenisController;
 use App\Http\Controllers\Admin\Cuti\CutiPengajuanController;
 use App\Http\Controllers\Admin\Cuti\CutiRekapController;
+use App\Http\Controllers\Admin\Sppd\SppdController;
 
 
 Route::get('view-file/{folder}/{filename}', [PortalController::class, 'viewFile'])
@@ -312,6 +313,22 @@ Route::prefix('ref')->group(function () {
         Route::post('store', [JadwalKaryawanController::class, 'store'])->name('absensi.jadwal-karyawan.store');
         Route::post('update/{id}', [JadwalKaryawanController::class, 'update'])->name('absensi.jadwal-karyawan.update');
         Route::post('destroy/{id}', [JadwalKaryawanController::class, 'destroy'])->name('absensi.jadwal-karyawan.destroy');
+    });
+
+    Route::prefix('sppd')->group(function () {
+        Route::get('/', [SppdController::class, 'index'])->name('sppd.index');
+        Route::get('data', [SppdController::class, 'list'])->name('sppd.list');
+        Route::get('show/{id}', [SppdController::class, 'show'])->name('sppd.show');
+        Route::get('print/{id}', [SppdController::class, 'print'])->name('sppd.print');
+
+        Route::post('store', [SppdController::class, 'store'])->name('sppd.store');
+        Route::post('update/{id}', [SppdController::class, 'update'])->name('sppd.update');
+
+        Route::post('submit/{id}', [SppdController::class, 'submit'])->name('sppd.submit');
+        Route::post('approve/{id}', [SppdController::class, 'approve'])->name('sppd.approve');
+        Route::post('selesai/{id}', [SppdController::class, 'selesai'])->name('sppd.selesai');
+
+        Route::post('destroy/{id}', [SppdController::class, 'destroy'])->name('sppd.destroy');
     });
 });
 

@@ -17,6 +17,10 @@
                 href="{{ route('admin.sdm.sdm.index') }}">
                 <span class="menu-title">SDM</span>
             </a>
+            <a class="menu-link {{ request()->routeIs('admin.sppd.*') ? 'active' : '' }}"
+            href="{{ route('admin.sppd.index') }}">
+                <span class="menu-title">SPPD</span>
+            </a>
 
             @php $absensiActive = request()->routeIs('admin.absensi.*'); @endphp
             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $absensiActive ? 'here show' : '' }}">
