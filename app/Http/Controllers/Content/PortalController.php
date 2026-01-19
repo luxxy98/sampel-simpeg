@@ -61,24 +61,21 @@ final class PortalController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        if (Auth::guard('admin')->attempt(['email' => $username, 'password' => $password])) {
-            return redirect()->intended();
-        } else {
-            return redirect()->back()->with('error', 'nama pengguna dan kata kunci salah');
-        }
-        // Validasi reCAPTCHA
-        if (!$this->validateRecaptcha($recaptchaResponse)) {
-        return redirect()
-            ->back()
-            ->withErrors(['g-recaptcha-response' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.'])
-            ->withInput();
+        // Validasi reCAPTCHA di production sebelum login attempt
+        if (config('app.env') === 'production') {
+            if (!$this->validateRecaptcha($recaptchaResponse)) {
+                return redirect()
+                    ->back()
+                    ->withErrors(['g-recaptcha-response' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.'])
+                    ->withInput();
+            }
         }
 
         if (Auth::guard('admin')->attempt(['email' => $username, 'password' => $password])) {
             return redirect()->intended();
-        } else {
-            return redirect()->back()->with('error', 'nama pengguna dan kata kunci salah')->withInput();
         }
+
+        return redirect()->back()->with('error', 'nama pengguna dan kata kunci salah')->withInput();
     }
 
     /**

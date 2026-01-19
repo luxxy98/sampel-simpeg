@@ -10,6 +10,24 @@ class SppdRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
+    protected function prepareForValidation(): void
+    {
+        // Konversi field biaya ke integer (hapus karakter non-digit)
+        $biayaFields = ['biaya_transport', 'biaya_penginapan', 'uang_harian', 'biaya_lainnya'];
+        $cleaned = [];
+        
+        foreach ($biayaFields as $field) {
+            if ($this->has($field) && $this->input($field) !== null && $this->input($field) !== '') {
+                // Hapus semua karakter kecuali digit
+                $cleaned[$field] = (int) preg_replace('/[^0-9]/', '', (string) $this->input($field));
+            }
+        }
+        
+        if (!empty($cleaned)) {
+            $this->merge($cleaned);
+        }
+    }
+
     public function rules(): array
     {
         return [

@@ -7,8 +7,16 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
+use App\Services\Absensi\AbsensiService;
+
 final class SppdService
 {
+    public function __construct(
+        private readonly AbsensiService $absensiService
+    ) {}
+
+    // ... existing methods ...
+
     public function sdmOptions(): Collection
     {
         return \DB::table('person_sdm')
@@ -94,6 +102,68 @@ final class SppdService
             'approved_by' => $adminId,
             'tanggal_persetujuan' => Carbon::now()->format('Y-m-d'),
         ]);
+
+        // Jika disetujui, buatkan absensi DINAS LUAR (ID 8) otomatis
+        if ($status === 'disetujui') {
+            $startDate = Carbon::parse($sppd->tanggal_berangkat);
+            $endDate = Carbon::parse($sppd->tanggal_pulang);
+
+            while ($startDate->lte($endDate)) {
+                $currentDate = $startDate->format('Y-m-d');
+
+                // Cek apakah sudah ada absensi di tanggal ini untuk SDM ini
+                $exists = \DB::table('absensi')
+                    ->where('id_sdm', $sppd->id_sdm)
+                    ->whereDate('tanggal', $currentDate)
+                    ->exists();
+
+                if (!$exists) {
+                    // Coba resolve jadwal karyawan
+                    $idJadwalKaryawan = $this->absensiService->resolveJadwalForSdm($sppd->id_sdm, $currentDate);
+
+                    if ($idJadwalKaryawan) {
+                        // Siapkan data absensi
+                        $dataAbsensi = [
+                            'tanggal' => $currentDate,
+                            'id_jadwal_karyawan' => $idJadwalKaryawan,
+                            'id_sdm' => $sppd->id_sdm,
+                            'total_jam_kerja' => 8, // Asumsi standar 8 jam
+                            'total_terlambat' => 0,
+                            'total_pulang_awal' => 0,
+                            'total_lembur' => 0,
+                        ];
+
+                        // Siapkan detail absensi (DINAS LUAR)
+                        // Ambil jam masuk/pulang dari jadwal jika ada, atau default 08:00-16:00
+                        $jadwal = \DB::table('master_jadwal_kerja')
+                            ->join('sdm_jadwal_karyawan', 'sdm_jadwal_karyawan.id_jadwal', '=', 'master_jadwal_kerja.id_jadwal')
+                            ->where('sdm_jadwal_karyawan.id_jadwal_karyawan', $idJadwalKaryawan)
+                            ->first(['jam_masuk', 'jam_pulang']);
+
+                        $jamMasuk = $jadwal->jam_masuk ?? '08:00';
+                        $jamPulang = $jadwal->jam_pulang ?? '16:00';
+
+                        $detailRows = [[
+                            'id_jenis_absen' => 8, // ID 8 = DINAS LUAR (pastikan ID ini benar di database)
+                            'waktu_mulai' => $jamMasuk,
+                            'waktu_selesai' => $jamPulang,
+                            'durasi_jam' => 8,
+                            'lokasi_pulang' => $sppd->tujuan, // Isi lokasi pulang dengan tujuan dinas
+                        ]];
+
+                        // Create via AbsensiService
+                        try {
+                            $this->absensiService->create($dataAbsensi, $detailRows);
+                        } catch (\Throwable $e) {
+                            // Log error tapi jangan gagalkan proses approval SPPD
+                            \Log::error("Gagal buat absensi otomatis untuk SPPD {$sppd->nomor_surat} tanggal {$currentDate}: " . $e->getMessage());
+                        }
+                    }
+                }
+
+                $startDate->addDay();
+            }
+        }
 
         return $sppd;
     }

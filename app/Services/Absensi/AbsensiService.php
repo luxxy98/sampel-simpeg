@@ -408,26 +408,43 @@ final class AbsensiService
     }
 
     public function jadwalKaryawanOptionsForDate(int $idSdm, string $tanggal): array
-{
-    return DB::connection('mysql')
-        ->table('sdm_jadwal_karyawan as sjk')
-        ->join('master_jadwal_kerja as mjk', 'mjk.id_jadwal', '=', 'sjk.id_jadwal')
-        ->where('sjk.id_sdm', $idSdm)
-        ->whereDate('sjk.tanggal_mulai', '<=', $tanggal)
-        ->whereDate('sjk.tanggal_selesai', '>=', $tanggal)
-        ->orderByDesc('sjk.tanggal_mulai')
-        ->get([
-            'sjk.id_jadwal_karyawan',
-            'sjk.id_jadwal',
-            'sjk.tanggal_mulai',
-            'sjk.tanggal_selesai',
-            'mjk.nama_jadwal',
-            'mjk.jam_masuk',
-            'mjk.jam_pulang',
-        ])
-        ->map(fn($r) => (array) $r)
-        ->all();
-}
+    {
+        $bulanIndo = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        return DB::connection('mysql')
+            ->table('sdm_jadwal_karyawan as sjk')
+            ->join('master_jadwal_kerja as mjk', 'mjk.id_jadwal', '=', 'sjk.id_jadwal')
+            ->where('sjk.id_sdm', $idSdm)
+            ->whereDate('sjk.tanggal_mulai', '<=', $tanggal)
+            ->whereDate('sjk.tanggal_selesai', '>=', $tanggal)
+            ->orderByDesc('sjk.tanggal_mulai')
+            ->get([
+                'sjk.id_jadwal_karyawan',
+                'sjk.id_jadwal',
+                'sjk.tanggal_mulai',
+                'sjk.tanggal_selesai',
+                'mjk.nama_jadwal',
+                'mjk.jam_masuk',
+                'mjk.jam_pulang',
+            ])
+            ->map(function ($r) use ($bulanIndo) {
+                $arr = (array) $r;
+                
+                // Format: "Shift Malam (Januari 2026)"
+                $mulai = \Carbon\Carbon::parse($r->tanggal_mulai);
+                $bulan = $bulanIndo[$mulai->month] ?? $mulai->format('F');
+                $tahun = $mulai->year;
+                
+                $arr['nama_display'] = "{$r->nama_jadwal} ({$bulan} {$tahun})";
+                
+                return $arr;
+            })
+            ->all();
+    }
 
 
     private function getSdmName(int $idSdm): ?string

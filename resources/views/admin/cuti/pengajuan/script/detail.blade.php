@@ -22,7 +22,7 @@
 
                     $("#detail_tgl_pengajuan").text(response.data.tanggal_pengajuan ?? '-');
                     $("#detail_tgl_persetujuan").text(response.data.tanggal_persetujuan ?? '-');
-                    $("#detail_approved_by").text(response.data.approved_by ?? '-');
+                    $("#detail_approved_by").text(response.data.approver_name ?? '-');
                     $("#detail_alasan").text(response.data.alasan ?? '-');
                     $("#detail_catatan").text(response.data.catatan ?? '-');
 

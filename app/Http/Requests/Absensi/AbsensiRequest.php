@@ -38,6 +38,15 @@ final class AbsensiRequest extends FormRequest
         $detail = $this->input('detail');
         if (!is_array($detail)) return;
 
+        $tanggalHeader = $this->input('tanggal');
+        if (!$tanggalHeader) return;
+
+        try {
+            $headerDate = Carbon::parse($tanggalHeader)->startOfDay();
+        } catch (\Throwable) {
+            return;
+        }
+
         $mulaiArr   = $detail['waktu_mulai'] ?? null;
         $selesaiArr = $detail['waktu_selesai'] ?? null;
         $durasiArr  = $detail['durasi_jam'] ?? null;
@@ -48,23 +57,41 @@ final class AbsensiRequest extends FormRequest
         $n = max(count($mulaiArr), count($selesaiArr), count($durasiArr));
 
         for ($i = 0; $i < $n; $i++) {
-            $mulai  = $mulaiArr[$i] ?? null;
-            $selesai = $selesaiArr[$i] ?? null;
+            $mulai  = trim($mulaiArr[$i] ?? '');
+            $selesai = trim($selesaiArr[$i] ?? '');
 
             if (!$mulai || !$selesai) continue;
 
             try {
-                // Normalize datetime using Carbon (handles format variations)
-                $start = Carbon::parse($mulai);
-                $end   = Carbon::parse($selesai);
+                // Cek apakah input hanya waktu (HH:mm atau HH:mm:ss) atau sudah datetime lengkap
+                $isTimeOnlyMulai = preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $mulai);
+                $isTimeOnlySelesai = preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $selesai);
+
+                if ($isTimeOnlyMulai) {
+                    // Gabungkan tanggal header dengan waktu input
+                    $start = Carbon::parse($headerDate->toDateString() . ' ' . $mulai);
+                } else {
+                    $start = Carbon::parse($mulai);
+                }
+
+                if ($isTimeOnlySelesai) {
+                    // Gabungkan tanggal header dengan waktu input
+                    $end = Carbon::parse($headerDate->toDateString() . ' ' . $selesai);
+                } else {
+                    $end = Carbon::parse($selesai);
+                }
                 
-                // Auto-koreksi tanggal waktu selesai untuk lembur dini hari
-                // Jika jam mulai >= 12 dan jam selesai 00-01, maka user pasti maksud hari berikutnya
+                // Auto-koreksi tanggal waktu selesai untuk lembur dini hari / shift malam
+                // Jika waktu selesai <= waktu mulai, maka user pasti maksud hari berikutnya
                 $startHour = (int) $start->format('H');
                 $endHour = (int) $end->format('H');
                 
-                if ($startHour >= 12 && $endHour <= self::OVERTIME_HOUR_END && $end->toDateString() === $start->toDateString()) {
-                    // User input jam 00:00-01:00 di hari yang sama padahal maksudnya hari berikutnya
+                // Jika end <= start (misalnya mulai 22:00, selesai 06:00), tambahkan 1 hari ke end
+                if ($end->lessThanOrEqualTo($start)) {
+                    $end = $end->addDay();
+                }
+                // Atau jika jam mulai siang/malam dan selesai dini hari
+                elseif ($startHour >= 12 && $endHour <= self::OVERTIME_HOUR_END && $end->toDateString() === $start->toDateString()) {
                     $end = $end->addDay();
                 }
                 
@@ -160,6 +187,18 @@ final class AbsensiRequest extends FormRequest
                 }
             }
 
+            // Cek apakah SDM memiliki cuti disetujui pada tanggal ini
+            // Jika ada cuti disetujui, tidak boleh input absensi HADIR
+            $cutiDisetujui = null;
+            if ($idSdm) {
+                $cutiDisetujui = DB::connection('mysql')->table('cuti_pengajuan')
+                    ->where('id_sdm', $idSdm)
+                    ->where('status', 'disetujui')
+                    ->whereDate('tanggal_mulai', '<=', $header->toDateString())
+                    ->whereDate('tanggal_selesai', '>=', $header->toDateString())
+                    ->first(['id_cuti', 'tanggal_mulai', 'tanggal_selesai', 'jumlah_hari']);
+            }
+
             $allowedEndDates = [
                 $header->toDateString(),
                 $header->copy()->addDay()->toDateString(), // shift malam boleh nyebrang H+1
@@ -222,6 +261,24 @@ final class AbsensiRequest extends FormRequest
                     $nama = $jenisNameMap[(int) $idJenis] ?? null;
                     if (in_array($nama, ['ALPHA', 'CUTI'], true)) {
                         $validator->errors()->add("detail.id_jenis_absen.$i", 'Tanggal ini adalah hari libur, jadi tidak boleh memilih jenis ALPHA/CUTI.');
+                        continue;
+                    }
+                }
+
+                // Validasi: jika ada cuti disetujui, tidak boleh input HADIR
+                if ($cutiDisetujui) {
+                    // Get nama jenis absen untuk cek apakah HADIR
+                    $namaJenisAbsen = DB::connection('mysql')->table('absen_jenis')
+                        ->where('id_jenis_absen', $idJenis)
+                        ->value('nama_absen');
+                    
+                    if (strtoupper(trim($namaJenisAbsen ?? '')) === 'HADIR') {
+                        $tglMulai = Carbon::parse($cutiDisetujui->tanggal_mulai)->format('d/m/Y');
+                        $tglSelesai = Carbon::parse($cutiDisetujui->tanggal_selesai)->format('d/m/Y');
+                        $validator->errors()->add(
+                            "detail.id_jenis_absen.$i", 
+                            "Tidak bisa input HADIR karena SDM ini memiliki cuti disetujui pada tanggal {$tglMulai} s/d {$tglSelesai}."
+                        );
                         continue;
                     }
                 }

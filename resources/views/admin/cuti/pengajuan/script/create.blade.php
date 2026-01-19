@@ -40,7 +40,11 @@
                         if (!response.success && response.errors) {
                             const validationErrorFilter = new ValidationErrorFilter();
                             validationErrorFilter.filterValidationErrors(response);
-                            Swal.fire('Warning', 'validasi bermasalah', 'warning');
+                            
+                            // Ambil pesan error pertama dari response.errors
+                            const firstError = Object.values(response.errors)[0];
+                            const errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+                            Swal.fire('Validasi Gagal', errorMessage, 'warning');
                         }
 
                         if (!response.success && !response.errors) {

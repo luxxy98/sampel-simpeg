@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
 Route::get('/', [PortalController::class, 'login'])->name('index');
+Route::get('/login', fn() => redirect()->route('index'))->name('login');
 Route::post('/login', [PortalController::class, 'logindb'])->name('logindb');
 Route::get('/logout', [PortalController::class, 'logout'])->name('logout');
 Route::get('log-viewer', [LogViewerController::class, 'index'])->name('log-viewer');

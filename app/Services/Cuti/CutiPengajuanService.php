@@ -72,10 +72,12 @@ final class CutiPengajuanService
             ->leftJoin('cuti_jenis', 'cuti_jenis.id_jenis_cuti', '=', 'cuti_pengajuan.id_jenis_cuti')
             ->leftJoin('person_sdm', 'person_sdm.id_sdm', '=', 'cuti_pengajuan.id_sdm')
             ->leftJoin('person', 'person.id_person', '=', 'person_sdm.id_person')
+            ->leftJoin('users', 'users.id', '=', 'cuti_pengajuan.approved_by')
             ->select([
                 'cuti_pengajuan.*',
                 'cuti_jenis.nama_jenis',
                 'person.nama',
+                'users.name as approver_name',
             ])
             ->where('cuti_pengajuan.id_cuti', $id)
             ->first();

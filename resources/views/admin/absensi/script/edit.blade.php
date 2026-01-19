@@ -74,43 +74,32 @@
                     totalTerlambat += (jamDatangMenit - jamMasukMenit) / 60;
                 }
 
-                // Hitung pulang awal dan lembur menggunakan full datetime comparison
+                // Hitung pulang awal dan lembur menggunakan waktu dalam menit
                 if (waktuMulai && waktuSelesai) {
-                    const startDate = new Date(waktuMulai.replace(' ', 'T'));
-                    const endDate = new Date(waktuSelesai.replace(' ', 'T'));
+                    // Parse waktu dalam format HH:mm
+                    const startMenit = parseTimeToMinutesEdit(waktuMulai);
+                    let endMenit = parseTimeToMinutesEdit(waktuSelesai);
                     
-                    // Buat jadwal pulang berdasarkan tanggal mulai
-                    const scheduledEnd = new Date(startDate);
-                    const pulangHours = Math.floor(jamPulangMenit / 60);
-                    const pulangMinutes = jamPulangMenit % 60;
-                    scheduledEnd.setHours(pulangHours, pulangMinutes, 0, 0);
-                    
-                    // Jika jadwal pulang <= jam masuk, berarti shift melewati tengah malam (misal 22:00-06:00)
-                    if (jamPulangMenit <= jamMasukMenit) {
-                        scheduledEnd.setDate(scheduledEnd.getDate() + 1);
+                    // Jika waktu selesai <= waktu mulai, berarti melewati tengah malam
+                    if (endMenit <= startMenit) {
+                        endMenit += 24 * 60; // tambah 24 jam
                     }
                     
-                    // Jika waktu selesai lebih kecil dari waktu mulai, berarti melewati tengah malam
-                    // Contoh: masuk 15:00, pulang 00:00 keesokan hari
-                    let adjustedEndDate = new Date(endDate);
-                    // Cek berdasarkan jam: jika jam selesai < jam mulai, berarti sudah lewat tengah malam
-                    const endHour = endDate.getHours();
-                    const startHour = startDate.getHours();
-                    if (endHour < startHour && endDate.getTime() <= startDate.getTime()) {
-                        // Waktu selesai di hari berikutnya
-                        adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+                    // Jadwal pulang dalam menit (untuk perbandingan)
+                    let scheduledEndMenit = jamPulangMenit;
+                    // Jika jadwal pulang <= jam masuk, berarti shift melewati tengah malam
+                    if (jamPulangMenit <= jamMasukMenit) {
+                        scheduledEndMenit += 24 * 60;
                     }
                     
                     // Pulang awal: jika waktu selesai < jadwal pulang
-                    if (adjustedEndDate < scheduledEnd) {
-                        const diffMs = scheduledEnd.getTime() - adjustedEndDate.getTime();
-                        totalPulangAwal += diffMs / 3600000; // convert ms to hours
+                    if (endMenit < scheduledEndMenit) {
+                        totalPulangAwal += (scheduledEndMenit - endMenit) / 60;
                     }
                     
                     // Lembur: jika waktu selesai > jadwal pulang
-                    if (adjustedEndDate > scheduledEnd) {
-                        const diffMs = adjustedEndDate.getTime() - scheduledEnd.getTime();
-                        totalLembur += diffMs / 3600000; // convert ms to hours
+                    if (endMenit > scheduledEndMenit) {
+                        totalLembur += (endMenit - scheduledEndMenit) / 60;
                     }
                 }
             }
@@ -201,7 +190,21 @@
             @endforeach
         @endisset`;
 
+        // Helper function to extract time from datetime string
+        const extractTime = (datetimeStr) => {
+            if (!datetimeStr) return '';
+            // Format: "YYYY-MM-DD HH:mm:ss" atau "YYYY-MM-DDTHH:mm:ss"
+            const match = datetimeStr.match(/(\d{2}):(\d{2})(:\d{2})?/);
+            if (match) {
+                return match[1] + ':' + match[2]; // Return HH:mm
+            }
+            return datetimeStr; // Return as-is if no match
+        };
+
         (payload.detail || []).forEach((d, i) => {
+            const waktuMulai = extractTime(d.waktu_mulai);
+            const waktuSelesai = extractTime(d.waktu_selesai);
+            
             $tbody.append(`
                 <tr>
                     <td class="text-muted">${i+1}</td>
@@ -211,8 +214,8 @@
                             ${jenisOptions}
                         </select>
                     </td>
-                    <td><input type="text" class="form-control form-control-sm edit_detail_mulai" name="detail[waktu_mulai][]" value="${d.waktu_mulai || ''}"></td>
-                    <td><input type="text" class="form-control form-control-sm edit_detail_selesai" name="detail[waktu_selesai][]" value="${d.waktu_selesai || ''}"></td>
+                    <td><input type="text" class="form-control form-control-sm edit_detail_mulai" name="detail[waktu_mulai][]" value="${waktuMulai}" placeholder="HH:mm"></td>
+                    <td><input type="text" class="form-control form-control-sm edit_detail_selesai" name="detail[waktu_selesai][]" value="${waktuSelesai}" placeholder="HH:mm"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm edit_detail_durasi" name="detail[durasi_jam][]" value="${d.durasi_jam || '0.00'}"></td>
                     <td><input type="text" class="form-control form-control-sm" name="detail[lokasi_pulang][]" value="${d.lokasi_pulang || ''}"></td>
                 </tr>
@@ -224,7 +227,7 @@
             $tbody.find('tr').eq(i).find('select.edit_detail_jenis').val(d.id_jenis_absen).trigger('change');
         });
 
-        $tbody.find('.edit_detail_mulai, .edit_detail_selesai').flatpickr({ enableTime: true, enableSeconds: true, dateFormat: 'Y-m-d H:i:S' });
+        $tbody.find('.edit_detail_mulai, .edit_detail_selesai').flatpickr({ enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
 
         // Re-bind change for duration calculation
         $tbody.off('change', '.edit_detail_mulai, .edit_detail_selesai').on('change', '.edit_detail_mulai, .edit_detail_selesai', function () {
@@ -268,7 +271,11 @@
                 } else if (response.errors) {
                     const v = new ValidationErrorFilter();
                     v.filterValidationErrors(response);
-                    Swal.fire('Warning', 'Validasi bermasalah', 'warning');
+                    
+                    // Ambil pesan error pertama dari response.errors
+                    const firstError = Object.values(response.errors)[0];
+                    const errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+                    Swal.fire('Validasi Gagal', errorMessage, 'warning');
                 } else {
                     Swal.fire('Peringatan', response.message || 'Gagal menyimpan', 'warning');
                 }

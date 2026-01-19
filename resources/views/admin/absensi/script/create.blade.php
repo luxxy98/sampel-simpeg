@@ -27,8 +27,8 @@
                         ${jenisOptions}
                     </select>
                 </td>
-                <td><input type="text" class="form-control form-control-sm ${prefix}detail_mulai" name="${prefix}detail[waktu_mulai][]" placeholder="YYYY-MM-DD HH:mm:ss"></td>
-                <td><input type="text" class="form-control form-control-sm ${prefix}detail_selesai" name="${prefix}detail[waktu_selesai][]" placeholder="YYYY-MM-DD HH:mm:ss"></td>
+                <td><input type="text" class="form-control form-control-sm ${prefix}detail_mulai" name="${prefix}detail[waktu_mulai][]" placeholder="HH:mm"></td>
+                <td><input type="text" class="form-control form-control-sm ${prefix}detail_selesai" name="${prefix}detail[waktu_selesai][]" placeholder="HH:mm"></td>
                 <td><input type="number" step="0.01" class="form-control form-control-sm ${prefix}detail_durasi" name="${prefix}detail[durasi_jam][]" value="0.00"></td>
                 <td><input type="text" class="form-control form-control-sm" name="${prefix}detail[lokasi_pulang][]" placeholder="Lokasi pulang"></td>
             </tr>
@@ -46,11 +46,21 @@
         const selesai = $row.find(selesaiSelector).val();
         if (!mulai || !selesai) return;
 
-        const start = new Date(mulai.replace(' ', 'T'));
-        const end = new Date(selesai.replace(' ', 'T'));
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
+        // Parse waktu dalam format HH:mm atau HH:mm:ss
+        const parseTime = (timeStr) => {
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        };
 
-        const diffH = (end.getTime() - start.getTime()) / 3600000;
+        const startMins = parseTime(mulai);
+        let endMins = parseTime(selesai);
+        
+        // Jika waktu selesai <= waktu mulai, berarti melewati tengah malam (tambah 24 jam)
+        if (endMins <= startMins) {
+            endMins += 24 * 60; // tambah 24 jam
+        }
+        
+        const diffH = (endMins - startMins) / 60;
         if (diffH >= 0) $row.find(durasiSelector).val(diffH.toFixed(2));
     }
 
@@ -118,43 +128,32 @@
                     totalTerlambat += (jamDatangMenit - jamMasukMenit) / 60;
                 }
 
-                // Hitung pulang awal dan lembur menggunakan full datetime comparison
+                // Hitung pulang awal dan lembur menggunakan waktu dalam menit
                 if (waktuMulai && waktuSelesai) {
-                    const startDate = new Date(waktuMulai.replace(' ', 'T'));
-                    const endDate = new Date(waktuSelesai.replace(' ', 'T'));
+                    // Parse waktu dalam format HH:mm
+                    const startMenit = parseTimeToMinutes(waktuMulai);
+                    let endMenit = parseTimeToMinutes(waktuSelesai);
                     
-                    // Buat jadwal pulang berdasarkan tanggal mulai
-                    const scheduledEnd = new Date(startDate);
-                    const pulangHours = Math.floor(jamPulangMenit / 60);
-                    const pulangMinutes = jamPulangMenit % 60;
-                    scheduledEnd.setHours(pulangHours, pulangMinutes, 0, 0);
-                    
-                    // Jika jadwal pulang <= jam masuk, berarti shift melewati tengah malam (misal 22:00-06:00)
-                    if (jamPulangMenit <= jamMasukMenit) {
-                        scheduledEnd.setDate(scheduledEnd.getDate() + 1);
+                    // Jika waktu selesai <= waktu mulai, berarti melewati tengah malam
+                    if (endMenit <= startMenit) {
+                        endMenit += 24 * 60; // tambah 24 jam
                     }
                     
-                    // Jika waktu selesai lebih kecil dari waktu mulai, berarti melewati tengah malam
-                    // Contoh: masuk 15:00, pulang 00:00 keesokan hari
-                    let adjustedEndDate = new Date(endDate);
-                    // Cek berdasarkan jam: jika jam selesai < jam mulai, berarti sudah lewat tengah malam
-                    const endHour = endDate.getHours();
-                    const startHour = startDate.getHours();
-                    if (endHour < startHour && endDate.getTime() <= startDate.getTime()) {
-                        // Waktu selesai di hari berikutnya
-                        adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+                    // Jadwal pulang dalam menit (untuk perbandingan)
+                    let scheduledEndMenit = jamPulangMenit;
+                    // Jika jadwal pulang <= jam masuk, berarti shift melewati tengah malam
+                    if (jamPulangMenit <= jamMasukMenit) {
+                        scheduledEndMenit += 24 * 60;
                     }
                     
                     // Pulang awal: jika waktu selesai < jadwal pulang
-                    if (adjustedEndDate < scheduledEnd) {
-                        const diffMs = scheduledEnd.getTime() - adjustedEndDate.getTime();
-                        totalPulangAwal += diffMs / 3600000; // convert ms to hours
+                    if (endMenit < scheduledEndMenit) {
+                        totalPulangAwal += (scheduledEndMenit - endMenit) / 60;
                     }
                     
                     // Lembur: jika waktu selesai > jadwal pulang
-                    if (adjustedEndDate > scheduledEnd) {
-                        const diffMs = adjustedEndDate.getTime() - scheduledEnd.getTime();
-                        totalLembur += diffMs / 3600000; // convert ms to hours
+                    if (endMenit > scheduledEndMenit) {
+                        totalLembur += (endMenit - scheduledEndMenit) / 60;
                     }
                 }
             }
@@ -231,7 +230,8 @@
     $sel.empty().append(new Option('', '', true, false));
 
     (options || []).forEach(o => {
-        const text = `${o.nama_jadwal} (${o.jam_masuk} - ${o.jam_pulang}) | ${o.tanggal_mulai} s/d ${o.tanggal_selesai}`;
+        // Gunakan nama_display yang sudah diformat dari backend: "Shift Malam (Januari 2026)"
+        const text = o.nama_display || `${o.nama_jadwal} (${o.jam_masuk} - ${o.jam_pulang})`;
         $sel.append(new Option(text, o.id_jadwal_karyawan, false, false));
     });
 
@@ -328,7 +328,7 @@ loadJadwalKaryawanBySdmTanggal();
         const $tbody = $('#table_detail_create tbody');
         $tbody.html(buildDetailRow(1));
         $tbody.find('[data-control="select2"]').select2({ dropdownParent: $('#form_create') });
-        $tbody.find('.detail_mulai, .detail_selesai').flatpickr({ enableTime: true, enableSeconds: true, dateFormat: 'Y-m-d H:i:S' });
+        $tbody.find('.detail_mulai, .detail_selesai').flatpickr({ enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
 
         // Recalculate when time changes
         $tbody.off('change', '.detail_mulai, .detail_selesai').on('change', '.detail_mulai, .detail_selesai', function () {

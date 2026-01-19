@@ -37,6 +37,11 @@ final class GajiTrxService
         if ($idPeriode) $q->where('gt.id_periode', $idPeriode);
         if ($status) $q->where('gt.status', $status);
 
+        // Urutkan berdasarkan tahun, bulan, kemudian nama SDM
+        $q->orderBy('gp.tahun', 'asc')
+          ->orderBy('gp.bulan', 'asc')
+          ->orderBy('p.nama', 'asc');
+
         return $q;
     }
 

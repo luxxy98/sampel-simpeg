@@ -58,7 +58,7 @@ final class SppdController extends Controller
                             </button>";
                     }
 
-                    if ($status === 'diajukan') {
+                    if ($status === 'draft' || $status === 'diajukan') {
                         $approveBtn = "
                             <button type='button'
                                 data-id='{$id}'
@@ -163,7 +163,9 @@ final class SppdController extends Controller
     {
         $sppd = $this->service->findById($id);
         if (!$sppd) return $this->response->errorResponse('Data tidak ditemukan', 404);
-        if ($sppd->status !== 'diajukan') return $this->response->errorResponse('Hanya status diajukan yang bisa diproses.');
+        if (!in_array($sppd->status, ['draft', 'diajukan'], true)) {
+            return $this->response->errorResponse('Hanya status draft atau diajukan yang bisa diproses.');
+        }
 
         return $this->transaction->handleWithTransaction(function () use ($request, $sppd) {
             $adminId = (string) (auth('admin')->user()->id_admin ?? '');

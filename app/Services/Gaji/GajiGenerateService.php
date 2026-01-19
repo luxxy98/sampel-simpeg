@@ -200,17 +200,15 @@ final class GajiGenerateService
     }
 
     /**
-     * Hitung potongan harian (ALPHA + CUTI)
+     * Hitung potongan harian (ALPHA dari absensi + CUTI dari cuti_pengajuan disetujui)
      */
     private function hitungPotonganHarian(int $idSdm, Carbon $startDate, Carbon $endDate, float $upahHarian): array
     {
-        // Ambil ID jenis absen ALPHA dan CUTI
+        // Ambil ID jenis absen ALPHA
         $jenisAlpha = DB::connection('mysql')->table('absen_jenis')
             ->where('nama_absen', 'ALPHA')->value('id_jenis_absen');
-        $jenisCuti = DB::connection('mysql')->table('absen_jenis')
-            ->where('nama_absen', 'CUTI')->value('id_jenis_absen');
 
-        // Hitung hari ALPHA (tanggal unik)
+        // Hitung hari ALPHA (tanggal unik dari absensi)
         $hariAlpha = 0;
         if ($jenisAlpha) {
             $hariAlpha = DB::connection('mysql')->table('absensi as a')
@@ -223,17 +221,37 @@ final class GajiGenerateService
                 ->count('a.tanggal');
         }
 
-        // Hitung hari CUTI (tanggal unik)
+        // Hitung hari CUTI dari cuti_pengajuan yang DISETUJUI
+        // Query cuti yang overlap dengan periode gaji
+        $cutiList = DB::connection('mysql')->table('cuti_pengajuan')
+            ->where('id_sdm', $idSdm)
+            ->where('status', 'disetujui')
+            ->where(function ($q) use ($startDate, $endDate) {
+                // Cuti yang overlap dengan periode gaji
+                $q->whereBetween('tanggal_mulai', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                  ->orWhereBetween('tanggal_selesai', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                  ->orWhere(function ($q2) use ($startDate, $endDate) {
+                      // Cuti yang mencakup seluruh periode
+                      $q2->where('tanggal_mulai', '<=', $startDate->format('Y-m-d'))
+                         ->where('tanggal_selesai', '>=', $endDate->format('Y-m-d'));
+                  });
+            })
+            ->get(['tanggal_mulai', 'tanggal_selesai']);
+
+        // Hitung jumlah hari cuti yang jatuh dalam periode gaji
         $hariCuti = 0;
-        if ($jenisCuti) {
-            $hariCuti = DB::connection('mysql')->table('absensi as a')
-                ->join('absensi_detail as ad', 'ad.id_absensi', '=', 'a.id_absensi')
-                ->where('a.id_sdm', $idSdm)
-                ->whereBetween('a.tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-                ->where('a.is_hari_libur', 0)
-                ->where('ad.id_jenis_absen', $jenisCuti)
-                ->distinct('a.tanggal')
-                ->count('a.tanggal');
+        foreach ($cutiList as $cuti) {
+            $cutiMulai = Carbon::parse($cuti->tanggal_mulai);
+            $cutiSelesai = Carbon::parse($cuti->tanggal_selesai);
+            
+            // Clamp ke periode gaji
+            $effectiveStart = $cutiMulai->lt($startDate) ? $startDate->copy() : $cutiMulai->copy();
+            $effectiveEnd = $cutiSelesai->gt($endDate) ? $endDate->copy() : $cutiSelesai->copy();
+            
+            // Hitung jumlah hari (inclusive)
+            if ($effectiveStart->lte($effectiveEnd)) {
+                $hariCuti += $effectiveStart->diffInDays($effectiveEnd) + 1;
+            }
         }
 
         $total = ($hariAlpha + $hariCuti) * $upahHarian;
@@ -250,28 +268,55 @@ final class GajiGenerateService
      */
     private function hitungPotonganTelat(int $idSdm, Carbon $startDate, Carbon $endDate, float $upahPerJam): array
     {
-        // Ambil tanggal yang sudah ALPHA atau CUTI
+        // Ambil tanggal yang sudah ALPHA
         $jenisAlpha = DB::connection('mysql')->table('absen_jenis')
             ->where('nama_absen', 'ALPHA')->value('id_jenis_absen');
-        $jenisCuti = DB::connection('mysql')->table('absen_jenis')
-            ->where('nama_absen', 'CUTI')->value('id_jenis_absen');
 
-        $excludeJenis = array_filter([$jenisAlpha, $jenisCuti]);
-
-        // Tanggal yang ALPHA/CUTI
+        // Tanggal ALPHA dari absensi
         $excludeDates = [];
-        if (!empty($excludeJenis)) {
+        if ($jenisAlpha) {
             $excludeDates = DB::connection('mysql')->table('absensi as a')
                 ->join('absensi_detail as ad', 'ad.id_absensi', '=', 'a.id_absensi')
                 ->where('a.id_sdm', $idSdm)
                 ->whereBetween('a.tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
                 ->where('a.is_hari_libur', 0)
-                ->whereIn('ad.id_jenis_absen', $excludeJenis)
+                ->where('ad.id_jenis_absen', $jenisAlpha)
                 ->pluck('a.tanggal')
                 ->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))
                 ->unique()
                 ->toArray();
         }
+
+        // Tambahkan tanggal cuti dari cuti_pengajuan yang disetujui
+        $cutiList = DB::connection('mysql')->table('cuti_pengajuan')
+            ->where('id_sdm', $idSdm)
+            ->where('status', 'disetujui')
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('tanggal_mulai', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                  ->orWhereBetween('tanggal_selesai', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                  ->orWhere(function ($q2) use ($startDate, $endDate) {
+                      $q2->where('tanggal_mulai', '<=', $startDate->format('Y-m-d'))
+                         ->where('tanggal_selesai', '>=', $endDate->format('Y-m-d'));
+                  });
+            })
+            ->get(['tanggal_mulai', 'tanggal_selesai']);
+
+        foreach ($cutiList as $cuti) {
+            $cutiMulai = Carbon::parse($cuti->tanggal_mulai);
+            $cutiSelesai = Carbon::parse($cuti->tanggal_selesai);
+            
+            // Clamp ke periode gaji
+            $effectiveStart = $cutiMulai->lt($startDate) ? $startDate->copy() : $cutiMulai->copy();
+            $effectiveEnd = $cutiSelesai->gt($endDate) ? $endDate->copy() : $cutiSelesai->copy();
+            
+            // Tambahkan semua tanggal cuti ke excludeDates
+            $current = $effectiveStart->copy();
+            while ($current->lte($effectiveEnd)) {
+                $excludeDates[] = $current->format('Y-m-d');
+                $current->addDay();
+            }
+        }
+        $excludeDates = array_unique($excludeDates);
 
         // Hitung total jam telat, exclude tanggal ALPHA/CUTI
         $query = DB::connection('mysql')->table('absensi')
