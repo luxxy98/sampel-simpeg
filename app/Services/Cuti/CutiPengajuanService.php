@@ -67,21 +67,25 @@ final class CutiPengajuanService
     }
 
     public function getDetailData(string $id): ?object
-    {
-        return \DB::table('cuti_pengajuan')
-            ->leftJoin('cuti_jenis', 'cuti_jenis.id_jenis_cuti', '=', 'cuti_pengajuan.id_jenis_cuti')
-            ->leftJoin('person_sdm', 'person_sdm.id_sdm', '=', 'cuti_pengajuan.id_sdm')
-            ->leftJoin('person', 'person.id_person', '=', 'person_sdm.id_person')
-            ->leftJoin('users', 'users.id', '=', 'cuti_pengajuan.approved_by')
-            ->select([
-                'cuti_pengajuan.*',
-                'cuti_jenis.nama_jenis',
-                'person.nama',
-                'users.name as approver_name',
-            ])
-            ->where('cuti_pengajuan.id_cuti', $id)
-            ->first();
-    }
+{
+    return \DB::table('cuti_pengajuan')
+        ->leftJoin('cuti_jenis', 'cuti_jenis.id_jenis_cuti', '=', 'cuti_pengajuan.id_jenis_cuti')
+        ->leftJoin('person_sdm', 'person_sdm.id_sdm', '=', 'cuti_pengajuan.id_sdm')
+        ->leftJoin('person', 'person.id_person', '=', 'person_sdm.id_person')
+
+        // ✅ approved_by diisi dari admin.id_admin (guard admin)
+        ->leftJoin('admin as a', 'a.id_admin', '=', 'cuti_pengajuan.approved_by')
+
+        ->select([
+            'cuti_pengajuan.*',
+            'cuti_jenis.nama_jenis',
+            'person.nama',
+            'a.nama as approver_name',
+        ])
+        ->where('cuti_pengajuan.id_cuti', $id)
+        ->first();
+}
+
 
     public function findById(string $id): ?CutiPengajuan
     {

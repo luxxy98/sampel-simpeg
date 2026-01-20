@@ -58,10 +58,23 @@ final class CutiPengajuanController extends Controller
                             </button>";
                     }
 
+                    // ✅ tombol cetak hanya jika disetujui
+                    $printBtn = '';
+                    if ($row->status === 'disetujui') {
+                        $printBtn = "
+                            <a href='" . route('admin.cuti.pengajuan.print', ['id' => $id]) . "'
+                            target='_blank'
+                            title='Cetak Surat Cuti'
+                            class='btn btn-icon btn-bg-light btn-active-text-dark btn-sm m-1'>
+                            <span class='bi bi-printer' aria-hidden='true'></span>
+                            </a>";
+                    }
+
                     return implode(' ', [
                         $this->transaction->actionButton($id, 'detail'),
                         $this->transaction->actionButton($id, 'edit'),
                         $approveBtn,
+                        $printBtn,
                         $this->transaction->actionButton($id, 'delete'),
                     ]);
                 },
@@ -147,5 +160,16 @@ final class CutiPengajuanController extends Controller
             $this->service->delete($cuti);
             return $this->response->successResponse('Pengajuan cuti berhasil dihapus');
         });
+    }
+
+    public function print(string $id): View
+    {
+        $data = $this->service->getDetailData($id);
+        abort_if(!$data, 404);
+
+        // ✅ hanya boleh cetak jika sudah disetujui
+        abort_if(($data->status ?? '') !== 'disetujui', 403);
+
+        return view('admin.cuti.pengajuan.print', compact('data'));
     }
 }

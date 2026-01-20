@@ -403,6 +403,7 @@ Route::prefix('cuti')->group(function () {
         Route::post('store', [CutiPengajuanController::class, 'store'])->name('cuti.pengajuan.store');
         Route::post('update/{id}', [CutiPengajuanController::class, 'update'])->name('cuti.pengajuan.update');
         Route::post('approve/{id}', [CutiPengajuanController::class, 'approve'])->name('cuti.pengajuan.approve');
+        Route::get('print/{id}', [CutiPengajuanController::class, 'print'])->name('cuti.pengajuan.print');
         Route::post('destroy/{id}', [CutiPengajuanController::class, 'destroy'])->name('cuti.pengajuan.destroy');
     });
 

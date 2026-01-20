@@ -1,20 +1,11 @@
 <script defer>
-    // Simpan di window supaya script lain (approve/submit/selesai) bisa trigger reload
-    window.sppdTable = null;
+    window.cutiTable = null;
 
     function badgeStatus(st) {
-        if (st === 'draft') return '<span class="badge badge-secondary">Draft</span>';
         if (st === 'diajukan') return '<span class="badge badge-warning">Diajukan</span>';
         if (st === 'disetujui') return '<span class="badge badge-success">Disetujui</span>';
         if (st === 'ditolak') return '<span class="badge badge-danger">Ditolak</span>';
-        if (st === 'selesai') return '<span class="badge badge-success">Selesai</span>';
         return st ?? '-';
-    }
-
-    function rupiah(x) {
-        const n = parseInt(x ?? 0);
-        if (isNaN(n)) return '0';
-        return n.toLocaleString('id-ID');
     }
 
     function load_data() {
@@ -23,14 +14,18 @@
         $('#filter_status').select2({ width: '100%' });
         $('#filter_id_sdm').select2({ width: '100%' });
 
-        window.sppdTable = $('#example').DataTable({
+        window.cutiTable = $('#example').DataTable({
             dom: 'lBfrtip',
             stateSave: true,
             stateDuration: -1,
             pageLength: 10,
             lengthMenu: [[10, 15, 20, 25],[10, 15, 20, 25]],
             buttons: [
-                { extend: 'colvis', className: 'btn btn-sm btn-dark rounded-2', columns: ':not(.noVis)' },
+                {
+                    extend: 'colvis',
+                    className: 'btn btn-sm btn-dark rounded-2',
+                    columns: ':not(.noVis)'
+                },
                 { extend: 'csv', action: newexportaction, className: 'btn btn-sm btn-dark rounded-2' },
                 { extend: 'excel', action: newexportaction, className: 'btn btn-sm btn-dark rounded-2' },
             ],
@@ -39,9 +34,11 @@
             responsive: true,
             searchHighlight: true,
             ajax: {
-                url: '{{ route('admin.sppd.list') }}',
+                url: '{{ route('admin.cuti.pengajuan.list') }}',
                 cache: false,
                 data: function (d) {
+                    d.tanggal_mulai = $('#filter_tanggal_mulai').val();
+                    d.tanggal_selesai = $('#filter_tanggal_selesai').val();
                     d.status = $('#filter_status').val();
                     d.id_sdm = $('#filter_id_sdm').val();
                 }
@@ -51,29 +48,33 @@
             columns: [
                 { data: 'action', name: 'action', orderable: false, searchable: false },
                 { data: 'nama', name: 'nama' },
-                { data: 'nomor_surat', name: 'nomor_surat', render: (d)=> d ?? '-' },
-                { data: 'tanggal_berangkat', name: 'tanggal_berangkat' },
-                { data: 'tanggal_pulang', name: 'tanggal_pulang' },
-                { data: 'tujuan', name: 'tujuan' },
-                { data: 'status', name: 'status', render: (d)=> badgeStatus(d) },
-                { data: 'total_biaya', name: 'total_biaya', render: (d)=> rupiah(d) },
+                { data: 'nama_jenis', name: 'nama_jenis' },
+                { data: 'tanggal_mulai', name: 'tanggal_mulai' },
+                { data: 'tanggal_selesai', name: 'tanggal_selesai' },
+                { data: 'jumlah_hari', name: 'jumlah_hari' },
+                { data: 'status', name: 'status', render: function(data){ return badgeStatus(data); } },
+                { data: 'tanggal_pengajuan', name: 'tanggal_pengajuan' },
             ]
         });
 
         const performOptimizedSearch = _.debounce(function (query) {
-            if (query.length >= 3 || query.length === 0) window.sppdTable.search(query).draw();
+            if (query.length >= 3 || query.length === 0) window.cutiTable.search(query).draw();
         }, 1000);
 
         $('#example_filter input').unbind().on('input', function () {
             performOptimizedSearch($(this).val());
         });
 
-        $('#btn_filter').on('click', function () { window.sppdTable.ajax.reload(); });
+        $('#btn_filter').on('click', function () {
+            window.cutiTable.ajax.reload();
+        });
 
         $('#btn_reset').on('click', function () {
+            $('#filter_tanggal_mulai').val('');
+            $('#filter_tanggal_selesai').val('');
             $('#filter_status').val('').trigger('change');
             $('#filter_id_sdm').val('').trigger('change');
-            window.sppdTable.ajax.reload();
+            window.cutiTable.ajax.reload();
         });
     }
 
