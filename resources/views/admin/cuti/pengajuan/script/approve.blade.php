@@ -5,17 +5,14 @@
 
         $('#approve_status').select2({ dropdownParent: $('#form_approve'), width: '100%' });
 
-        const detail = '{{ route('admin.cuti.pengajuan.show', [':id']) }}';
+        const detail = '{{ route('admin.sppd.show', [':id']) }}';
         DataManager.fetchData(detail.replace(':id', id))
             .then(function (response) {
                 if (response.success) {
-                    $("#approve_id").val(response.data.id_cuti);
-                    $("#approve_nama").text(response.data.nama ?? '-');
-                    $("#approve_jenis").text(response.data.nama_jenis ?? '-');
-                    $("#approve_mulai").text(response.data.tanggal_mulai ?? '-');
-                    $("#approve_selesai").text(response.data.tanggal_selesai ?? '-');
-                    $("#approve_hari").text(response.data.jumlah_hari ?? '-');
-
+                    const d = response.data;
+                    $("#approve_id").val(d.id_sppd);
+                    $("#approve_nama").text(d.nama ?? '-');
+                    $("#approve_tujuan").text(d.tujuan ?? '-');
                     $("#approve_status").val('').trigger('change');
                     $("#approve_catatan").val('');
                 } else {
@@ -28,7 +25,7 @@
 
             Swal.fire({
                 title: 'Kamu yakin?',
-                text: "Simpan keputusan untuk pengajuan ini?",
+                text: "Simpan keputusan approval?",
                 icon: 'warning',
                 confirmButtonColor: '#3085d6',
                 allowOutsideClick: false,
@@ -47,11 +44,14 @@
                         catatan: $("#approve_catatan").val(),
                     };
 
-                    const approve = '{{ route('admin.cuti.pengajuan.approve', [':id']) }}';
+                    const approve = '{{ route('admin.sppd.approve', [':id']) }}';
                     DataManager.putData(approve.replace(':id', id), input).then(response => {
                         if (response.success) {
                             Swal.fire('Success', response.message, 'success');
-                            setTimeout(() => location.reload(), 1000);
+
+                            // Refresh table agar kolom aksi (termasuk tombol Cetak) ikut update
+                            $('#form_approve').modal('hide');
+                            if (window.sppdTable) window.sppdTable.ajax.reload(null, false);
                         }
 
                         if (!response.success && response.errors) {

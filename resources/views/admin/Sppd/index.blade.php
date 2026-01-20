@@ -11,7 +11,7 @@
     <li class="breadcrumb-item">
         <span class="bullet bg-gray-200 w-5px h-2px"></span>
     </li>
-    <li class="breadcrumb-item text-dark">SPPD</li>
+    <li class="breadcrumb-item text-dark">Surat Perjalanan Dinas</li>
 @endsection
 
 @section('content')
@@ -21,13 +21,13 @@
             <div class="card mb-xl-8 mb-5 border-2 shadow">
                 <div class="card-header">
                     <h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bolder mb-1">Data SPPD</span>
+                        <span class="card-label fw-bolder mb-1">Data Surat Perjalanan Dinas</span>
                     </h3>
                     <div class="card-toolbar">
                         <div class="d-flex justify-content-end">
                             <a type="button" class="btn btn-sm btn-primary fs-sm-8 fs-lg-6"
                                data-bs-toggle="modal" data-bs-target="#form_create" title="Tambah SPPD">
-                                Tambah SPPD
+                                Tambah SPD
                             </a>
                         </div>
                     </div>

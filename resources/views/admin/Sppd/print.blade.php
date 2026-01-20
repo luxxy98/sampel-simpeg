@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cetak SPPD</title>
+    <title>Cetak SPD</title>
     <style>
         body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }
         .wrap { width: 800px; margin: 0 auto; }
@@ -27,7 +27,7 @@
     </div>
 
     <div class="title">
-        <h2>SURAT PERJALANAN DINAS (SPPD)</h2>
+        <h2>SURAT PERJALANAN DINAS (SPD)</h2>
         <div class="no">
             Nomor: {{ $data->nomor_surat ?? '-' }}
         </div>

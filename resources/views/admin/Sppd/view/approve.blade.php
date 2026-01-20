@@ -3,7 +3,7 @@
         <form method="post" id="bt_submit_approve">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Approve / Tolak SPPD</h5>
+                    <h5 class="modal-title">Approve / Tolak SPD</h5>
                     <a type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></a>
                 </div>
 

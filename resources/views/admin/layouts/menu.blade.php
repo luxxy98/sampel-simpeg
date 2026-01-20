@@ -19,7 +19,7 @@
             </a>
             <a class="menu-link {{ request()->routeIs('admin.sppd.*') ? 'active' : '' }}"
             href="{{ route('admin.sppd.index') }}">
-                <span class="menu-title">SPPD</span>
+                <span class="menu-title">SPD</span>
             </a>
 
             @php $absensiActive = request()->routeIs('admin.absensi.*'); @endphp

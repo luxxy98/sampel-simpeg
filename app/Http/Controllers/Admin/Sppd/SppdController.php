@@ -37,67 +37,71 @@ final class SppdController extends Controller
             ),
             [
                 'action' => function ($row) {
-                    $id = (int) data_get($row, 'id_sppd');
+    $id = (int) data_get($row, 'id_sppd');
 
-                    // normalisasi status biar aman (menghindari spasi / beda case)
-                    $status = strtolower(trim((string) data_get($row, 'status', '')));
+    // normalisasi status biar aman (menghindari spasi / beda case)
+    $status = strtolower(trim((string) data_get($row, 'status', '')));
 
-                    $approveBtn = '';
-                    $submitBtn = '';
-                    $selesaiBtn = '';
+    $approveBtn = '';
+    $submitBtn = '';
+    $selesaiBtn = '';
 
-                    if ($status === 'draft') {
-                        $submitBtn = "
-                            <button type='button'
-                                data-id='{$id}'
-                                title='Ajukan'
-                                data-bs-toggle='modal'
-                                data-bs-target='#form_submit'
-                                class='btn btn-icon btn-bg-light btn-active-text-warning btn-sm m-1'>
-                                <span class='bi bi-box-arrow-up-right' aria-hidden='true'></span>
-                            </button>";
-                    }
+    if ($status === 'draft') {
+        $submitBtn = "
+            <button type='button'
+                data-id='{$id}'
+                title='Ajukan'
+                data-bs-toggle='modal'
+                data-bs-target='#form_submit'
+                class='btn btn-icon btn-bg-light btn-active-text-warning btn-sm m-1'>
+                <span class='bi bi-box-arrow-up-right' aria-hidden='true'></span>
+            </button>";
+    }
 
-                    if ($status === 'draft' || $status === 'diajukan') {
-                        $approveBtn = "
-                            <button type='button'
-                                data-id='{$id}'
-                                title='Approve'
-                                data-bs-toggle='modal'
-                                data-bs-target='#form_approve'
-                                class='btn btn-icon btn-bg-light btn-active-text-success btn-sm m-1'>
-                                <span class='bi bi-check2-square' aria-hidden='true'></span>
-                            </button>";
-                    }
+    if ($status === 'draft' || $status === 'diajukan') {
+        $approveBtn = "
+            <button type='button'
+                data-id='{$id}'
+                title='Approve'
+                data-bs-toggle='modal'
+                data-bs-target='#form_approve'
+                class='btn btn-icon btn-bg-light btn-active-text-success btn-sm m-1'>
+                <span class='bi bi-check2-square' aria-hidden='true'></span>
+            </button>";
+    }
 
-                    if ($status === 'disetujui') {
-                        $selesaiBtn = "
-                            <button type='button'
-                                onclick='selesaiConfirmation({$id})'
-                                title='Selesai'
-                                class='btn btn-icon btn-bg-light btn-active-text-success btn-sm m-1'>
-                                <span class='bi bi-flag' aria-hidden='true'></span>
-                            </button>";
-                    }
+    if ($status === 'disetujui') {
+        $selesaiBtn = "
+            <button type='button'
+                onclick='selesaiConfirmation({$id})'
+                title='Selesai'
+                class='btn btn-icon btn-bg-light btn-active-text-success btn-sm m-1'>
+                <span class='bi bi-flag' aria-hidden='true'></span>
+            </button>";
+    }
 
-                    $printBtn = "
-                        <a href='" . route('admin.sppd.print', ['id' => $id]) . "'
-                        target='_blank'
-                        title='Cetak'
-                        class='btn btn-icon btn-bg-light btn-active-text-dark btn-sm m-1'>
-                        <span class='bi bi-printer' aria-hidden='true'></span>
-                        </a>";
+    // Tombol cetak hanya muncul ketika SPPD sudah di-approve (status: disetujui/selesai)
+    $printBtn = '';
+    if (in_array($status, ['disetujui', 'selesai'], true)) {
+        $printBtn = "
+            <a href='" . route('admin.sppd.print', ['id' => $id]) . "'
+            target='_blank'
+            title='Cetak'
+            class='btn btn-icon btn-bg-light btn-active-text-dark btn-sm m-1'>
+            <span class='bi bi-printer' aria-hidden='true'></span>
+            </a>";
+    }
 
-                    return implode(' ', [
-                        $this->transaction->actionButton($id, 'detail'),
-                        $this->transaction->actionButton($id, 'edit'),
-                        $submitBtn,
-                        $approveBtn,
-                        $selesaiBtn,
-                        $printBtn,
-                        $this->transaction->actionButton($id, 'delete'),
-                    ]);
-                },
+    return implode(' ', [
+        $this->transaction->actionButton($id, 'detail'),
+        $this->transaction->actionButton($id, 'edit'),
+        $submitBtn,
+        $approveBtn,
+        $selesaiBtn,
+        $printBtn,
+        $this->transaction->actionButton($id, 'delete'),
+    ]);
+},
 
             ]
         );

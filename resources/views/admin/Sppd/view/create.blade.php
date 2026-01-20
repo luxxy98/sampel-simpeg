@@ -3,7 +3,7 @@
         <form method="post" id="bt_submit_create">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Tambah SPPD</h5>
+                    <h5 class="modal-title">Tambah SPD</h5>
                     <a type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></a>
                 </div>
 
