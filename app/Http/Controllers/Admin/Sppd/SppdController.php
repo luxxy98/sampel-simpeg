@@ -53,8 +53,8 @@ final class SppdController extends Controller
                                 title='Ajukan'
                                 data-bs-toggle='modal'
                                 data-bs-target='#form_submit'
-                                class='btn btn-icon btn-bg-light btn-active-text-primary btn-sm m-1'>
-                                <span class='bi bi-send' aria-hidden='true'></span>
+                                class='btn btn-icon btn-bg-light btn-active-text-warning btn-sm m-1'>
+                                <span class='bi bi-box-arrow-up-right' aria-hidden='true'></span>
                             </button>";
                     }
 
