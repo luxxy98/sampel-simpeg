@@ -9,14 +9,10 @@
     }
 
     function getKomponenName(detail) {
-        // Jika ada nama_komponen dari join, gunakan itu
         if (detail.nama_komponen) {
             return detail.nama_komponen;
         }
-        // Jika tidak ada (potongan), ambil dari keterangan
         if (detail.keterangan) {
-            // Keterangan format: "Potongan ALPHA: 3 hari x Rp 225.806"
-            // Ambil bagian sebelum ":"
             const parts = detail.keterangan.split(':');
             if (parts.length > 0) {
                 return parts[0].trim();
@@ -40,27 +36,56 @@
             const trx = res.data.trx;
             const detail = res.data.detail || [];
 
-            $('#d_periode').text(trx.periode_label || ('Periode #' + trx.id_periode));
+            // Info Karyawan
             $('#d_sdm').text(trx.sdm_nama || ('SDM #' + trx.id_sdm));
+            $('#d_jabatan_unit').text(trx.jabatan || '');
+
+            // Periode
+            const bulanNama = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const periodeText = trx.bulan && trx.tahun 
+                ? `${bulanNama[trx.bulan]} ${trx.tahun}` 
+                : trx.periode_label;
+            $('#d_periode').text(periodeText);
+
+            // Status
+            let statusBadge;
+            if (trx.status === 'DISETUJUI') {
+                statusBadge = '<span class="badge bg-success">DISETUJUI</span>';
+            } else if (trx.status === 'DRAFT') {
+                statusBadge = '<span class="badge bg-warning text-dark">DRAFT</span>';
+            } else if (trx.status === 'DIBATALKAN') {
+                statusBadge = '<span class="badge bg-danger">DIBATALKAN</span>';
+            } else {
+                statusBadge = '<span class="badge bg-secondary">-</span>';
+            }
+            $('#d_status').html(statusBadge);
+
+            // Ringkasan Gaji
             $('#d_total_penghasilan').text(formatRupiah(trx.total_penghasilan));
             $('#d_total_potongan').text(formatRupiah(trx.total_potongan));
-            $('#d_thp').text(formatRupiah(trx.total_take_home_pay));
             
             // Calculate Uang Lembur from detail (find items with 'Lembur' in keterangan)
             const uangLembur = detail
                 .filter(d => d.keterangan && d.keterangan.toLowerCase().includes('lembur'))
                 .reduce((sum, d) => sum + (parseFloat(d.nominal) || 0), 0);
             $('#d_uang_lembur').text(formatRupiah(uangLembur));
+            $('#d_thp').text(formatRupiah(trx.total_take_home_pay));
 
+            // Hide timestamps section (data not available)
+            $('#d_created_at').parent().parent().parent().hide();
+
+            // Rincian Komponen
             const $tbody = $('#table_detail_gaji tbody');
             $tbody.html('');
             detail.forEach((d, i) => {
+                const nominalClass = parseFloat(d.nominal) < 0 ? 'text-danger' : 'text-success';
                 $tbody.append(`
                     <tr>
                         <td>${i+1}</td>
                         <td>${getKomponenName(d)}</td>
-                        <td>${formatRupiah(d.nominal)}</td>
-                        <td>${d.keterangan ?? '-'}</td>
+                        <td class="text-end ${nominalClass} fw-bold">${formatRupiah(d.nominal)}</td>
+                        <td class="text-muted small">${d.keterangan ?? '-'}</td>
                     </tr>
                 `);
             });
@@ -71,5 +96,3 @@
         }
     }
 </script>
-
-

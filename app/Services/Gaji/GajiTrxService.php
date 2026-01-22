@@ -62,6 +62,8 @@ final class GajiTrxService
                 'gt.total_take_home_pay',
                 'gt.status',
                 DB::raw("CONCAT(gp.tahun,'-',LPAD(gp.bulan,2,'0')) as periode_label"),
+                DB::raw('gp.tahun as tahun'),
+                DB::raw('gp.bulan as bulan'),
                 DB::raw('p.nama as sdm_nama'),
             ])
             ->where('gt.id_gaji', $idGaji)

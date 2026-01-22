@@ -11,6 +11,39 @@
         return 'Rp ' + number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
 
+    // Quick action: update status transfer
+    function updateStatusDistribusi(id, status) {
+        const title = status === 'SUCCESS' ? 'Konfirmasi Transfer Sukses' : 'Konfirmasi Transfer Gagal';
+        const text = status === 'SUCCESS' 
+            ? 'Apakah transfer sudah berhasil dilakukan?' 
+            : 'Tandai transfer ini sebagai gagal?';
+        const icon = status === 'SUCCESS' ? 'question' : 'warning';
+
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Konfirmasi',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: status === 'SUCCESS' ? '#28a745' : '#dc3545',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                DataManager.openLoading();
+                DataManager.postData(`{{ url('admin/gaji/distribusi/update-status') }}/${id}`, { status: status })
+                    .then(res => {
+                        if (res.success) {
+                            Swal.fire('Berhasil', res.message, 'success');
+                            tableDistribusi.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                        }
+                    })
+                    .catch(err => ErrorHandler.handleError(err));
+            }
+        });
+    }
+
     $('#btn_filter_reload').on('click', function () {
         if (tableDistribusi) tableDistribusi.ajax.reload();
     });
@@ -52,3 +85,4 @@
         ],
     });
 </script>
+

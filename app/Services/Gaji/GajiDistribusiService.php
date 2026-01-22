@@ -127,4 +127,41 @@ final class GajiDistribusiService
             ->orderByDesc('gt.id_gaji')
             ->get();
     }
+
+    /**
+     * Get transaksi gaji options filtered by periode.
+     * Label format: "Nama - Jabatan" (tanpa bulan/tahun karena sudah dipilih via dropdown periode)
+     */
+    public function trxOptionsByPeriode(int $idPeriode): Collection
+    {
+        $mainDb = $this->mainDatabaseName();
+
+        return DB::connection('absensigaji')->table('gaji_trx as gt')
+            ->leftJoin('gaji_periode as gp', 'gp.id_periode', '=', 'gt.id_periode')
+            ->leftJoin("{$mainDb}.person_sdm as ps", 'ps.id_sdm', '=', 'gt.id_sdm')
+            ->leftJoin("{$mainDb}.person as p", 'p.id_person', '=', 'ps.id_person')
+            ->leftJoin("{$mainDb}.sdm_struktural as ss", function ($join) {
+                $join->on('ss.id_sdm', '=', 'gt.id_sdm')
+                    ->whereNull('ss.tanggal_keluar');
+            })
+            ->leftJoin("{$mainDb}.master_jabatan as mj", 'mj.id_jabatan', '=', 'ss.id_jabatan')
+            ->leftJoin("{$mainDb}.sdm_rekening as sr", function ($join) {
+                $join->on('sr.id_sdm', '=', 'gt.id_sdm')
+                    ->where('sr.rekening_utama', '=', 'y');
+            })
+            ->where('gt.id_periode', $idPeriode)
+            ->select([
+                'gt.id_gaji',
+                'gt.id_periode',
+                'gt.id_sdm',
+                'gt.total_take_home_pay',
+                DB::raw("CONCAT(p.nama, ' - ', IFNULL(mj.jabatan, 'Belum ada jabatan')) as label"),
+                DB::raw('p.nama as nama_sdm'),
+                DB::raw('mj.jabatan as jabatan'),
+                'sr.id_rekening',
+                DB::raw("CONCAT(sr.bank, ' - ', sr.no_rekening, ' (', sr.nama_pemilik, ')') as rekening_label"),
+            ])
+            ->orderBy('p.nama')
+            ->get();
+    }
 }

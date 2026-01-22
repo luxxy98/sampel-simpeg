@@ -49,6 +49,24 @@ final class GajiTrxController extends Controller
                         </div>
                     ";
                 },
+                'status' => function ($row) {
+                    $status = $row->status;
+                    
+                    // Handle NULL status
+                    if ($status === null || $status === '') {
+                        return "<span class='badge bg-secondary'>-</span>";
+                    }
+                    
+                    // Format badge based on status
+                    $badgeClass = match($status) {
+                        'DISETUJUI' => 'bg-success',
+                        'DRAFT' => 'bg-warning text-dark',
+                        'DIBATALKAN' => 'bg-danger',
+                        default => 'bg-secondary',
+                    };
+                    
+                    return "<span class='badge {$badgeClass}'>{$status}</span>";
+                },
             ]
         );
     }

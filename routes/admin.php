@@ -374,6 +374,8 @@ Route::prefix('ref')->group(function () {
         Route::post('store', [GajiDistribusiController::class, 'store'])->name('gaji.distribusi.store');
         Route::post('update/{id}', [GajiDistribusiController::class, 'update'])->name('gaji.distribusi.update');
         Route::post('destroy/{id}', [GajiDistribusiController::class, 'destroy'])->name('gaji.distribusi.destroy');
+        Route::post('update-status/{id}', [GajiDistribusiController::class, 'updateStatus'])->name('gaji.distribusi.updateStatus');
+        Route::get('trx-by-periode/{periode}', [GajiDistribusiController::class, 'trxByPeriode'])->name('gaji.distribusi.trxByPeriode');
     });
 
     Route::prefix('tarif-lembur')->group(function () {
