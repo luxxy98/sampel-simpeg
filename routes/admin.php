@@ -32,6 +32,9 @@ use App\Http\Controllers\Admin\Cuti\CutiJenisController;
 use App\Http\Controllers\Admin\Cuti\CutiPengajuanController;
 use App\Http\Controllers\Admin\Cuti\CutiRekapController;
 use App\Http\Controllers\Admin\Sppd\SppdController;
+use App\Http\Controllers\Admin\Log\ActivityLogController;
+use App\Http\Controllers\Admin\Log\DbQueryLogController;
+use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
 
 Route::get('view-file/{folder}/{filename}', [PortalController::class, 'viewFile'])
@@ -415,5 +418,22 @@ Route::prefix('cuti')->group(function () {
     });
 
 });
+
+Route::prefix('log')->name('log.')->group(function () {
+
+    // Activity Log (Audits)
+    Route::get('activity', [ActivityLogController::class, 'index'])->name('activity.index');
+    Route::get('activity/data', [ActivityLogController::class, 'list'])->name('activity.list');
+    Route::get('activity/show/{id}', [ActivityLogController::class, 'show'])->name('activity.show');
+
+    // Database Query Log
+    Route::get('database', [DbQueryLogController::class, 'index'])->name('database.index');
+    Route::get('database/data', [DbQueryLogController::class, 'list'])->name('database.list');
+    Route::get('database/show/{id}', [DbQueryLogController::class, 'show'])->name('database.show');
+
+    // Error Log Viewer (paket)
+    Route::get('error', [LogViewerController::class, 'index'])->name('error.index');
+});
+
 
 

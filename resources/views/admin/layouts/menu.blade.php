@@ -168,6 +168,27 @@
                     </a>
                 </div>
             </div>
+            @php $logActive = request()->routeIs('admin.log.*'); @endphp
+            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $logActive ? 'here show' : '' }}">
+                <span class="menu-link">
+                    <span class="menu-title">Log</span>
+                    <span class="menu-arrow"></span>
+                </span>
+                <div class="menu-sub menu-sub-accordion menu-active-bg">
+                    <a class="menu-link {{ request()->routeIs('admin.log.activity.*') ? 'active' : '' }}"
+                    href="{{ route('admin.log.activity.index') }}">
+                        <span class="menu-title px-4">Activity</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.log.database.*') ? 'active' : '' }}"
+                    href="{{ route('admin.log.database.index') }}">
+                        <span class="menu-title px-4">Database</span>
+                    </a>
+                    <a class="menu-link {{ request()->routeIs('admin.log.error.*') ? 'active' : '' }}"
+                    href="{{ route('admin.log.error.index') }}">
+                        <span class="menu-title px-4">Error</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

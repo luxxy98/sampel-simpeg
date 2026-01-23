@@ -11,6 +11,7 @@ final class Audit extends Model implements Auditable
 {
     use AuditableTrait;
 
+    protected $connection = 'log';
     public $timestamps = true;
 
     protected $table = 'audits';
